@@ -1,7 +1,10 @@
 package com.welsenho.pokedex
 
 import android.content.Context
+import com.welsenho.pokedex.data.local.PokedexDatabase
 import com.welsenho.pokedex.data.remote.PokeApiService
+import com.welsenho.pokedex.data.repository.PokemonRepositoryImpl
+import com.welsenho.pokedex.data.repository.PokemonRepository
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -39,5 +42,15 @@ class AppContainer(private val context: Context) {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(PokeApiService::class.java)
+    }
+
+    private val database: PokedexDatabase by lazy { PokedexDatabase.create(context) }
+
+    val pokemonRepository: PokemonRepository by lazy {
+        PokemonRepositoryImpl(
+            pokemonDao = database.pokemonDao(),
+            captureDao = database.captureDao(),
+            api = pokeApiService,
+        )
     }
 }

@@ -1,0 +1,82 @@
+package com.welsenho.pokedex.ui.detail
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.welsenho.pokedex.PokedexApplication
+import com.welsenho.pokedex.data.local.PokemonEntity
+import com.welsenho.pokedex.data.repository.PokemonRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+data class DetailUiState(
+    val pokemon: PokemonEntity? = null,
+    val types: List<String> = emptyList(),
+    /** Species (description / evolves-from) fetch failed; offer retry. */
+    val speciesError: Boolean = false,
+    /**
+     * Evolves-from is only tappable when the pre-evolution is one of our 151 —
+     * e.g. Pikachu's pre-evolution Pichu (#172) is shown as plain text.
+     */
+    val evolvesFromTappable: Boolean = false,
+)
+
+class DetailViewModel(
+    private val repository: PokemonRepository,
+    savedStateHandle: SavedStateHandle,
+) : ViewModel() {
+
+    private val pokemonId: Int = checkNotNull(savedStateHandle[ARG_POKEMON_ID])
+
+    private val speciesError = MutableStateFlow(false)
+
+    val uiState: StateFlow<DetailUiState> =
+        combine(
+            repository.observePokemon(pokemonId),
+            repository.observeTypesOf(pokemonId),
+            speciesError,
+        ) { pokemon, types, error ->
+            DetailUiState(pokemon = pokemon, types = types, speciesError = error)
+        }.map { state ->
+            val evolvesFromId = state.pokemon?.evolvesFromId
+            state.copy(
+                evolvesFromTappable = evolvesFromId != null && repository.pokemonExists(evolvesFromId)
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = DetailUiState(),
+        )
+
+    init {
+        loadSpecies()
+    }
+
+    fun loadSpecies() {
+        viewModelScope.launch {
+            speciesError.value = false
+            speciesError.value = !repository.ensureSpecies(pokemonId)
+        }
+    }
+
+    companion object {
+        const val ARG_POKEMON_ID = "pokemonId"
+
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[APPLICATION_KEY] as PokedexApplication
+                DetailViewModel(app.container.pokemonRepository, createSavedStateHandle())
+            }
+        }
+    }
+}
