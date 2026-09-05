@@ -30,11 +30,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import com.welsenho.pokedex.ui.components.PokemonImage
+import com.welsenho.pokedex.ui.preview.PreviewData
+import com.welsenho.pokedex.ui.theme.PokedexTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     viewModel: DetailViewModel,
@@ -42,6 +44,22 @@ fun DetailScreen(
     onNavigateToPokemon: (Int) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    DetailContent(
+        state = state,
+        onBack = onBack,
+        onNavigateToPokemon = onNavigateToPokemon,
+        onRetrySpecies = viewModel::loadSpecies,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailContent(
+    state: DetailUiState,
+    onBack: () -> Unit,
+    onNavigateToPokemon: (Int) -> Unit,
+    onRetrySpecies: () -> Unit,
+) {
     val pokemon = state.pokemon
 
     Scaffold(
@@ -80,8 +98,8 @@ fun DetailScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AsyncImage(
-                model = pokemon.imageUrl,
+            PokemonImage(
+                imageUrl = pokemon.imageUrl,
                 contentDescription = pokemon.name,
                 modifier = Modifier
                     .padding(top = 16.dp)
@@ -112,7 +130,7 @@ fun DetailScreen(
                 fetched = pokemon.speciesFetched,
                 description = pokemon.description,
                 error = state.speciesError,
-                onRetry = viewModel::loadSpecies,
+                onRetry = onRetrySpecies,
             )
         }
     }
@@ -157,8 +175,8 @@ private fun EvolvesFromRow(
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
-        AsyncImage(
-            model = imageUrl,
+        PokemonImage(
+            imageUrl = imageUrl,
             contentDescription = name,
             modifier = Modifier.size(56.dp),
         )
@@ -196,5 +214,75 @@ private fun DescriptionSection(
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+// ---- Previews ----
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailPreview() {
+    PokedexTheme {
+        DetailContent(
+            state = DetailUiState(
+                pokemon = PreviewData.charizard,
+                types = listOf("fire", "flying"),
+                evolvesFromTappable = true,
+            ),
+            onBack = {},
+            onNavigateToPokemon = {},
+            onRetrySpecies = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailEvolvesFromOutsideRosterPreview() {
+    // Pikachu evolves from Pichu (#172), outside our 151 — plain text, no tap.
+    PokedexTheme {
+        DetailContent(
+            state = DetailUiState(
+                pokemon = PreviewData.pikachu,
+                types = listOf("electric"),
+                evolvesFromTappable = false,
+            ),
+            onBack = {},
+            onNavigateToPokemon = {},
+            onRetrySpecies = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailSpeciesLoadingPreview() {
+    PokedexTheme {
+        DetailContent(
+            state = DetailUiState(
+                pokemon = PreviewData.dratini,
+                types = listOf("dragon"),
+            ),
+            onBack = {},
+            onNavigateToPokemon = {},
+            onRetrySpecies = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DetailSpeciesErrorPreview() {
+    PokedexTheme {
+        DetailContent(
+            state = DetailUiState(
+                pokemon = PreviewData.dratini,
+                types = listOf("dragon"),
+                speciesError = true,
+            ),
+            onBack = {},
+            onNavigateToPokemon = {},
+            onRetrySpecies = {},
+        )
     }
 }

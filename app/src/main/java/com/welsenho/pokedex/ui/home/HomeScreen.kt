@@ -25,11 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.welsenho.pokedex.data.repository.SyncState
 import com.welsenho.pokedex.data.repository.TypeGroup
 import com.welsenho.pokedex.ui.components.PokemonCard
+import com.welsenho.pokedex.ui.preview.PreviewData
+import com.welsenho.pokedex.ui.theme.PokedexTheme
 
 @Composable
 fun HomeScreen(
@@ -208,5 +211,59 @@ private fun FullScreenError(onRetry: () -> Unit, modifier: Modifier = Modifier) 
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
         Button(onClick = onRetry) { Text("Retry") }
+    }
+}
+
+// ---- Previews ----
+
+@Preview(showBackground = true)
+@Composable
+private fun HomePreview() {
+    PokedexTheme {
+        HomeContent(
+            state = HomeUiState(
+                captured = PreviewData.captured,
+                typeGroups = PreviewData.typeGroups,
+                syncState = SyncState.Complete,
+            ),
+            onPokemonClick = {}, onCapture = {}, onRelease = {}, onRetry = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeEmptyPocketPreview() {
+    PokedexTheme {
+        HomeContent(
+            state = HomeUiState(
+                typeGroups = PreviewData.typeGroups,
+                syncState = SyncState.Complete,
+            ),
+            onPokemonClick = {}, onCapture = {}, onRelease = {}, onRetry = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomePartialFailurePreview() {
+    PokedexTheme {
+        HomeContent(
+            state = HomeUiState(
+                captured = PreviewData.captured,
+                typeGroups = PreviewData.typeGroups,
+                syncState = SyncState.Failed(failedDetails = 7, rosterUnavailable = false),
+            ),
+            onPokemonClick = {}, onCapture = {}, onRelease = {}, onRetry = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeFullScreenErrorPreview() {
+    PokedexTheme {
+        FullScreenError(onRetry = {})
     }
 }

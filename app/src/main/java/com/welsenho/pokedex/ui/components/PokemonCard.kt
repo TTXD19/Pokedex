@@ -18,8 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.welsenho.pokedex.ui.theme.PokedexTheme
 
 /**
  * One cell in a horizontal Pokémon row: artwork with a Pokéball action button
@@ -39,8 +40,8 @@ fun PokemonCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box {
-            AsyncImage(
-                model = imageUrl,
+            PokemonImage(
+                imageUrl = imageUrl,
                 contentDescription = name,
                 modifier = Modifier
                     .size(80.dp)
@@ -88,5 +89,26 @@ fun Pokeball(modifier: Modifier = Modifier, onClick: () -> Unit) {
         drawCircle(Color(0xFF1F1F1F), radius = radius * 0.34f)
         drawCircle(Color.White, radius = radius * 0.18f)
         drawCircle(Color(0xFF1F1F1F), radius = radius, style = Stroke(width = radius * 0.12f))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PokemonCardPreview() {
+    PokedexTheme {
+        PokemonCard(
+            name = "charizard",
+            imageUrl = null,
+            onClick = {},
+            onBallClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PokeballPreview() {
+    PokedexTheme {
+        Pokeball(modifier = Modifier.size(48.dp), onClick = {})
     }
 }
