@@ -52,7 +52,7 @@ class FakePokemonRepository : PokemonRepository {
     override fun observeTypesOf(id: Int): Flow<List<String>> =
         typeGroups.map { groups -> groups.filter { g -> g.pokemon.any { it.id == id } }.map { it.name } }
 
-    override suspend fun pokemonExists(id: Int): Boolean = pokemonById.value.containsKey(id)
+    override suspend fun getPokemon(id: Int): PokemonEntity? = pokemonById.value[id]
 
     override suspend fun capture(pokemonId: Int) {
         captures.value += CaptureEntity(id = nextCaptureId++, pokemonId = pokemonId, capturedAt = ++now)

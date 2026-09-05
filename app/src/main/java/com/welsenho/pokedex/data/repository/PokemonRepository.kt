@@ -23,7 +23,8 @@ interface PokemonRepository {
 
     fun observeTypesOf(id: Int): Flow<List<String>>
 
-    suspend fun pokemonExists(id: Int): Boolean
+    /** One-shot read; null when the id is outside our roster (e.g. Pichu #172). */
+    suspend fun getPokemon(id: Int): PokemonEntity?
 
     /** Records one capture event; the same Pokémon can be captured repeatedly. */
     suspend fun capture(pokemonId: Int)

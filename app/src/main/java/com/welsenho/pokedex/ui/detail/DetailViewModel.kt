@@ -29,6 +29,7 @@ data class DetailUiState(
      * e.g. Pikachu's pre-evolution Pichu (#172) is shown as plain text.
      */
     val evolvesFromTappable: Boolean = false,
+    val evolvesFromImageUrl: String? = null,
 )
 
 class DetailViewModel(
@@ -48,9 +49,10 @@ class DetailViewModel(
         ) { pokemon, types, error ->
             DetailUiState(pokemon = pokemon, types = types, speciesError = error)
         }.map { state ->
-            val evolvesFromId = state.pokemon?.evolvesFromId
+            val evolvesFrom = state.pokemon?.evolvesFromId?.let { repository.getPokemon(it) }
             state.copy(
-                evolvesFromTappable = evolvesFromId != null && repository.pokemonExists(evolvesFromId)
+                evolvesFromTappable = evolvesFrom != null,
+                evolvesFromImageUrl = evolvesFrom?.imageUrl,
             )
         }.stateIn(
             scope = viewModelScope,

@@ -46,7 +46,7 @@ class PokemonRepositoryImpl(
 
     override fun observeTypesOf(id: Int): Flow<List<String>> = pokemonDao.observeTypesOf(id)
 
-    override suspend fun pokemonExists(id: Int): Boolean = pokemonDao.exists(id)
+    override suspend fun getPokemon(id: Int): PokemonEntity? = pokemonDao.getPokemon(id)
 
     // ---- Capture / release ----
 
