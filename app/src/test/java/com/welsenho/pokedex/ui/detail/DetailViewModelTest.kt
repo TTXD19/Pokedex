@@ -40,11 +40,46 @@ class DetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = DetailViewModel(
+    private fun viewModel(pokemonId: Int = 25) = DetailViewModel(
         repository = repository,
         networkMonitor = networkMonitor,
-        savedStateHandle = SavedStateHandle(mapOf(DetailViewModel.ARG_POKEMON_ID to 25)),
+        savedStateHandle = SavedStateHandle(mapOf(DetailViewModel.ARG_POKEMON_ID to pokemonId)),
     )
+
+    @Test
+    fun `out-of-roster id is fetched on demand and shown`() =
+        runTest(dispatcher.scheduler) {
+            val viewModel = viewModel(pokemonId = 174) // Igglybuff, not seeded
+
+            viewModel.uiState.test {
+                val state = awaitItemWhere { it.pokemon != null }
+                assertEquals(174, state.pokemon?.id)
+                assertFalse(state.detailError)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `failed out-of-roster fetch shows error and recovers on reconnect`() =
+        runTest(dispatcher.scheduler) {
+            repository.ensureDetailResult = false
+            val viewModel = viewModel(pokemonId = 174)
+
+            viewModel.uiState.test {
+                val failed = awaitItemWhere { it.detailError }
+                assertTrue(failed.pokemon == null)
+
+                repository.ensureDetailResult = true
+                networkMonitor.online.value = false
+                dispatcher.scheduler.runCurrent()
+                networkMonitor.online.value = true
+
+                val recovered = awaitItemWhere { it.pokemon != null }
+                assertEquals(174, recovered.pokemon?.id)
+                assertFalse(recovered.detailError)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
     @Test
     fun `regaining connectivity retries a failed species load`() =

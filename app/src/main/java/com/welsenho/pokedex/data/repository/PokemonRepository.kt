@@ -43,4 +43,12 @@ interface PokemonRepository {
      * Returns false on failure so the caller can offer a retry.
      */
     suspend fun ensureSpecies(id: Int): Boolean
+
+    /**
+     * Makes sure this Pokémon's detail (name, image, types) is in the DB,
+     * fetching it if needed — including ids outside the 151 roster, which are
+     * cached for detail viewing but never shown in the collection.
+     * Returns false on failure so the caller can offer a retry.
+     */
+    suspend fun ensureDetail(id: Int): Boolean
 }

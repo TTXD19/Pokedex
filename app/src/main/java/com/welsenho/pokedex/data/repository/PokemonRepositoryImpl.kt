@@ -35,7 +35,7 @@ class PokemonRepositoryImpl(
     // ---- Reads (DB is the single source of truth; UI only ever observes it) ----
 
     override fun observeTypeGroups(): Flow<List<TypeGroup>> =
-        pokemonDao.observeTypeRows().map { rows ->
+        pokemonDao.observeTypeRows(POKEMON_LIMIT).map { rows ->
             rows.groupBy { it.typeName }
                 .map { (type, group) -> TypeGroup(type, group.map { it.pokemon }) }
         }
@@ -72,14 +72,14 @@ class PokemonRepositoryImpl(
         syncMutex.withLock {
             _syncState.value = SyncState.Running
 
-            if (pokemonDao.count() < POKEMON_LIMIT) {
+            if (pokemonDao.countRoster(POKEMON_LIMIT) < POKEMON_LIMIT) {
                 try {
                     val roster = api.getPokemonList(limit = POKEMON_LIMIT)
                     pokemonDao.insertRoster(
                         roster.results.map { PokemonEntity(id = it.id, name = it.name) }
                     )
                 } catch (e: Exception) {
-                    if (pokemonDao.count() == 0) {
+                    if (pokemonDao.countRoster(POKEMON_LIMIT) == 0) {
                         _syncState.value = SyncState.Failed(0, rosterUnavailable = true)
                         return
                     }
@@ -88,7 +88,7 @@ class PokemonRepositoryImpl(
                 }
             }
 
-            val missing = pokemonDao.missingDetailIds()
+            val missing = pokemonDao.missingDetailIds(POKEMON_LIMIT)
             val failed = coroutineScope {
                 val semaphore = Semaphore(MAX_CONCURRENT_DETAIL_FETCHES)
                 missing.map { id ->
@@ -121,6 +121,19 @@ class PokemonRepositoryImpl(
                 PokemonTypeEntity(pokemonId = detail.id, typeName = it.type.name, slot = it.slot)
             },
         )
+    }
+
+    override suspend fun ensureDetail(id: Int): Boolean {
+        if (pokemonDao.getPokemon(id)?.detailFetched == true) return true
+        return try {
+            // Seed a stub row for ids outside the roster (IGNOREd when one
+            // exists); fetchAndStoreDetail then fills it like any other.
+            pokemonDao.insertRoster(listOf(PokemonEntity(id = id, name = "")))
+            fetchAndStoreDetail(id)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun ensureSpecies(id: Int): Boolean {

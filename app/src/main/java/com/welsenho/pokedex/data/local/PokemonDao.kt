@@ -20,11 +20,17 @@ interface PokemonDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertRoster(pokemon: List<PokemonEntity>)
 
-    @Query("SELECT COUNT(*) FROM pokemon")
-    suspend fun count(): Int
+    /**
+     * Rows with id > limit are cached on demand for the detail screen (e.g.
+     * pre-evolutions like Igglybuff #174) and must never count as roster,
+     * which is why the queries below scope to the id range: the assignment's
+     * roster is exactly ids 1..151.
+     */
+    @Query("SELECT COUNT(*) FROM pokemon WHERE id <= :limit")
+    suspend fun countRoster(limit: Int): Int
 
-    @Query("SELECT id FROM pokemon WHERE detailFetched = 0 ORDER BY id")
-    suspend fun missingDetailIds(): List<Int>
+    @Query("SELECT id FROM pokemon WHERE detailFetched = 0 AND id <= :limit ORDER BY id")
+    suspend fun missingDetailIds(limit: Int): List<Int>
 
     @Query(
         "UPDATE pokemon SET name = :name, imageUrl = :imageUrl, detailFetched = 1 WHERE id = :id"
@@ -58,11 +64,11 @@ interface PokemonDao {
         """
         SELECT pt.typeName AS typeName, p.*
         FROM pokemon_types pt JOIN pokemon p ON p.id = pt.pokemonId
-        WHERE p.detailFetched = 1
+        WHERE p.detailFetched = 1 AND p.id <= :limit
         ORDER BY pt.typeName ASC, p.id ASC
         """
     )
-    fun observeTypeRows(): Flow<List<TypeRow>>
+    fun observeTypeRows(limit: Int): Flow<List<TypeRow>>
 
     @Query("SELECT * FROM pokemon WHERE id = :id")
     fun observePokemon(id: Int): Flow<PokemonEntity?>

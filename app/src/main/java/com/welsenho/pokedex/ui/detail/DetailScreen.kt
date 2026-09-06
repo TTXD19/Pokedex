@@ -56,7 +56,7 @@ fun DetailScreen(
         state = state,
         onBack = onBack,
         onNavigateToPokemon = onNavigateToPokemon,
-        onRetrySpecies = viewModel::loadSpecies,
+        onRetry = viewModel::load,
     )
 }
 
@@ -66,7 +66,7 @@ fun DetailContent(
     state: DetailUiState,
     onBack: () -> Unit,
     onNavigateToPokemon: (Int) -> Unit,
-    onRetrySpecies: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     val pokemon = state.pokemon
 
@@ -104,7 +104,29 @@ fun DetailContent(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
     ) { padding ->
-        if (pokemon == null) return@Scaffold
+        if (pokemon == null) {
+            // Not in the DB yet: an out-of-roster id being fetched, or offline.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (state.detailError) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Couldn't load this Pokémon.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = onRetry) { Text("Retry") }
+                    }
+                } else {
+                    CircularProgressIndicator()
+                }
+            }
+            return@Scaffold
+        }
 
         Column(
             modifier = Modifier
@@ -149,7 +171,7 @@ fun DetailContent(
                 fetched = pokemon.speciesFetched,
                 description = pokemon.description,
                 error = state.speciesError,
-                onRetry = onRetrySpecies,
+                onRetry = onRetry,
             )
         }
     }
@@ -250,7 +272,7 @@ private fun DetailPreview() {
             ),
             onBack = {},
             onNavigateToPokemon = {},
-            onRetrySpecies = {},
+            onRetry = {},
         )
     }
 }
@@ -258,17 +280,18 @@ private fun DetailPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun DetailEvolvesFromOutsideRosterPreview() {
-    // Pikachu evolves from Pichu (#172), outside our 151 — plain text, no tap.
+    // Pikachu evolves from Pichu (#172), outside the 151: tappable (fetched on
+    // demand), thumbnail blank until its detail has been cached.
     PokedexTheme {
         DetailContent(
             state = DetailUiState(
                 pokemon = PreviewData.pikachu,
                 types = listOf("electric"),
-                evolvesFromTappable = false,
+                evolvesFromTappable = true,
             ),
             onBack = {},
             onNavigateToPokemon = {},
-            onRetrySpecies = {},
+            onRetry = {},
         )
     }
 }
@@ -284,7 +307,7 @@ private fun DetailSpeciesLoadingPreview() {
             ),
             onBack = {},
             onNavigateToPokemon = {},
-            onRetrySpecies = {},
+            onRetry = {},
         )
     }
 }
@@ -301,7 +324,7 @@ private fun DetailSpeciesErrorPreview() {
             ),
             onBack = {},
             onNavigateToPokemon = {},
-            onRetrySpecies = {},
+            onRetry = {},
         )
     }
 }

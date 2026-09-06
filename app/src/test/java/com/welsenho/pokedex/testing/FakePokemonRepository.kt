@@ -29,6 +29,9 @@ class FakePokemonRepository : PokemonRepository {
     var ensureSpeciesCalls = 0
         private set
     var ensureSpeciesResult = true
+    var ensureDetailCalls = 0
+        private set
+    var ensureDetailResult = true
     private var nextCaptureId = 1L
     private var now = 0L
 
@@ -71,5 +74,14 @@ class FakePokemonRepository : PokemonRepository {
     override suspend fun ensureSpecies(id: Int): Boolean {
         ensureSpeciesCalls++
         return ensureSpeciesResult
+    }
+
+    override suspend fun ensureDetail(id: Int): Boolean {
+        ensureDetailCalls++
+        if (!ensureDetailResult) return false
+        if (!pokemonById.value.containsKey(id)) {
+            addPokemon(PokemonEntity(id = id, name = "pokemon-$id", detailFetched = true))
+        }
+        return true
     }
 }

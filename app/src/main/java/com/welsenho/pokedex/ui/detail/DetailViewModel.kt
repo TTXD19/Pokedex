@@ -20,12 +20,11 @@ import kotlinx.coroutines.launch
 data class DetailUiState(
     val pokemon: PokemonEntity? = null,
     val types: List<String> = emptyList(),
+    /** The Pokémon itself couldn't be fetched (out-of-roster id, offline). */
+    val detailError: Boolean = false,
     /** Species (description / evolves-from) fetch failed; offer retry. */
     val speciesError: Boolean = false,
-    /**
-     * Evolves-from is only tappable when the pre-evolution is one of our 151 —
-     * e.g. Pikachu's pre-evolution Pichu (#172) is shown as plain text.
-     */
+    /** Pre-evolutions outside the 151 are fetched on demand, so always tappable. */
     val evolvesFromTappable: Boolean = false,
     val evolvesFromImageUrl: String? = null,
     val isOnline: Boolean = true,
@@ -39,20 +38,28 @@ class DetailViewModel(
 
     private val pokemonId: Int = checkNotNull(savedStateHandle[ARG_POKEMON_ID])
 
+    private val detailError = MutableStateFlow(false)
     private val speciesError = MutableStateFlow(false)
 
     val uiState: StateFlow<DetailUiState> =
         combine(
             repository.observePokemon(pokemonId),
             repository.observeTypesOf(pokemonId),
+            detailError,
             speciesError,
             networkMonitor.isOnline,
-        ) { pokemon, types, error, online ->
-            DetailUiState(pokemon = pokemon, types = types, speciesError = error, isOnline = online)
+        ) { pokemon, types, dError, sError, online ->
+            DetailUiState(
+                pokemon = pokemon,
+                types = types,
+                detailError = dError,
+                speciesError = sError,
+                isOnline = online,
+            )
         }.map { state ->
             val evolvesFrom = state.pokemon?.evolvesFromId?.let { repository.getPokemon(it) }
             state.copy(
-                evolvesFromTappable = evolvesFrom != null,
+                evolvesFromTappable = state.pokemon?.evolvesFromId != null,
                 evolvesFromImageUrl = evolvesFrom?.imageUrl,
             )
         }.stateIn(
@@ -62,22 +69,33 @@ class DetailViewModel(
         )
 
     init {
-        loadSpecies()
-        // Connectivity coming back retries a failed species load automatically;
-        // when it's already cached this is a single DB check, no request.
+        load()
+        // Connectivity coming back retries whatever failed automatically;
+        // when everything is cached this is DB checks only, no requests.
         viewModelScope.launch {
             networkMonitor.isOnline
                 .distinctUntilChanged()
                 .drop(1)
                 .filter { it }
-                .collect { loadSpecies() }
+                .collect { load() }
         }
     }
 
-    fun loadSpecies() {
+    fun load() {
         viewModelScope.launch {
+            detailError.value = false
             speciesError.value = false
-            speciesError.value = !repository.ensureSpecies(pokemonId)
+            // Detail first: out-of-roster ids (e.g. Igglybuff #174) have no row
+            // yet, and the species write needs one to land in.
+            val detailOk = repository.ensureDetail(pokemonId)
+            detailError.value = !detailOk
+            if (detailOk) {
+                speciesError.value = !repository.ensureSpecies(pokemonId)
+                // Prefetch the pre-evolution so its thumbnail shows and
+                // tapping through is instant.
+                repository.getPokemon(pokemonId)?.evolvesFromId
+                    ?.let { repository.ensureDetail(it) }
+            }
         }
     }
 
