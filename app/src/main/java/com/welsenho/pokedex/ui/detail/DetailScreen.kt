@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -191,6 +192,7 @@ private fun TypeChip(name: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EvolvesFromRow(
     name: String,
@@ -198,29 +200,44 @@ private fun EvolvesFromRow(
     tappable: Boolean,
     onClick: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    // A tonal card with a trailing chevron so the tap-through to the
+    // pre-evolution's detail is obvious, not a hidden hit area.
+    Surface(
+        onClick = onClick,
+        enabled = tappable,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp)
-            .clickable(enabled = tappable, onClick = onClick),
+            .padding(top = 24.dp),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = "Evolves from",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Evolves from",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = name.replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            PokemonImage(
+                imageUrl = imageUrl,
+                contentDescription = name,
+                modifier = Modifier.size(56.dp),
             )
-            Text(
-                text = name.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.bodyLarge,
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "View details",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
-        PokemonImage(
-            imageUrl = imageUrl,
-            contentDescription = name,
-            modifier = Modifier.size(56.dp),
-        )
     }
 }
 
