@@ -1,14 +1,20 @@
 package com.welsenho.pokedex
 
 import android.app.Application
+import com.welsenho.pokedex.di.dataModule
+import com.welsenho.pokedex.di.viewModelModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
 
 class PokedexApplication : Application() {
 
-    lateinit var container: AppContainer
-        private set
-
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(this)
+        startKoin {
+            androidLogger()
+            androidContext(this@PokedexApplication)
+            modules(dataModule, viewModelModule)
+        }
     }
 }

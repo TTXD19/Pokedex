@@ -2,13 +2,7 @@ package com.welsenho.pokedex.ui.detail
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.welsenho.pokedex.PokedexApplication
 import com.welsenho.pokedex.data.local.PokemonEntity
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,12 +67,5 @@ class DetailViewModel(
 
     companion object {
         const val ARG_POKEMON_ID = "pokemonId"
-
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val app = this[APPLICATION_KEY] as PokedexApplication
-                DetailViewModel(app.container.pokemonRepository, createSavedStateHandle())
-            }
-        }
     }
 }

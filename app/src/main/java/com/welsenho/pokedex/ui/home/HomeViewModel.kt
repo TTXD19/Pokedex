@@ -1,12 +1,7 @@
 package com.welsenho.pokedex.ui.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.welsenho.pokedex.PokedexApplication
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import com.welsenho.pokedex.data.repository.SyncState
 import com.welsenho.pokedex.data.repository.TypeGroup
@@ -100,12 +95,5 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
 
     companion object {
         private const val MIN_REFRESH_VISIBLE_MS = 400L
-
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val app = this[APPLICATION_KEY] as PokedexApplication
-                HomeViewModel(app.container.pokemonRepository)
-            }
-        }
     }
 }

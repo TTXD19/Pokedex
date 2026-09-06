@@ -65,7 +65,13 @@ dependencies {
 
     implementation(libs.coil.compose)
 
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
     testImplementation(libs.junit)
+    testImplementation(platform(libs.koin.bom))
+    testImplementation(libs.koin.test)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

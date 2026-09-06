@@ -1,7 +1,6 @@
 package com.welsenho.pokedex.ui
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,6 +10,7 @@ import com.welsenho.pokedex.ui.detail.DetailScreen
 import com.welsenho.pokedex.ui.detail.DetailViewModel
 import com.welsenho.pokedex.ui.home.HomeScreen
 import com.welsenho.pokedex.ui.home.HomeViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun PokedexApp() {
@@ -18,7 +18,7 @@ fun PokedexApp() {
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
-            val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
+            val viewModel: HomeViewModel = koinViewModel()
             HomeScreen(
                 viewModel = viewModel,
                 onPokemonClick = { id -> navController.navigate("detail/$id") },
@@ -30,7 +30,7 @@ fun PokedexApp() {
                 navArgument(DetailViewModel.ARG_POKEMON_ID) { type = NavType.IntType }
             ),
         ) {
-            val viewModel: DetailViewModel = viewModel(factory = DetailViewModel.Factory)
+            val viewModel: DetailViewModel = koinViewModel()
             DetailScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
