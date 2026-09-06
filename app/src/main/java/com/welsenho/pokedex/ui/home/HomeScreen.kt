@@ -70,8 +70,6 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
 
-            // Pull-to-refresh re-runs sync: it only fetches what's still
-            // missing (failed or interrupted items), never the whole set.
             else -> PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
                 onRefresh = viewModel::refresh,

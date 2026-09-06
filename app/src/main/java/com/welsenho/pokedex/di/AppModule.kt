@@ -54,6 +54,5 @@ val dataModule = module {
 
 val viewModelModule = module {
     viewModelOf(::HomeViewModel)
-    // SavedStateHandle (nav args) is injected by Koin's ViewModel factory.
     viewModelOf(::DetailViewModel)
 }
