@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Pokedex" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Pokedex" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Shown during startup and navigation transitions; keep it the same
+             white as the Compose background so no off-white band peeks out. -->
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
 </resources>
