@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,6 +59,9 @@ fun HomeScreen(
                 }
             }
         },
+        // Only the top is consumed here; the list draws behind the navigation
+        // bar and keeps its last row clear of it via contentPadding instead.
+        contentWindowInsets = WindowInsets.statusBars,
     ) { padding ->
         when {
             state.showFullScreenError -> FullScreenError(
@@ -98,7 +105,10 @@ private fun HomeContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+    ) {
         val failed = state.syncState as? SyncState.Failed
         if (failed != null && !failed.rosterUnavailable) {
             item(key = "sync_banner") {
