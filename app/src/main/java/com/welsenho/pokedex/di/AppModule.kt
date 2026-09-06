@@ -20,6 +20,8 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
+private const val MAX_LOG_LINE_CHARS = 4000
+
 val dataModule = module {
 
     single {
@@ -31,13 +33,22 @@ val dataModule = module {
         OkHttpClient.Builder()
             .apply {
                 if (BuildConfig.DEBUG) {
-                    // Filter by tag "PokeApi" in Logcat to watch API traffic.
-                    // BASIC logs method/url/status/latency/size; BODY would dump
-                    // PokeAPI's few-hundred-KB payloads and flood the log.
+                    // Filter by tag "PokeApi" in Logcat to watch API traffic,
+                    // including request/response headers and JSON bodies.
+                    // PokeAPI bodies run to hundreds of KB and Android's Log
+                    // hard-cuts around 4K anyway, so long lines are truncated
+                    // explicitly with the original size noted.
                     val logger = HttpLoggingInterceptor { message ->
-                        Log.d("PokeApi", message)
+                        val line =
+                            if (message.length > MAX_LOG_LINE_CHARS) {
+                                message.take(MAX_LOG_LINE_CHARS) +
+                                    "… (truncated, ${message.length} chars total)"
+                            } else {
+                                message
+                            }
+                        Log.d("PokeApi", line)
                     }
-                    addInterceptor(logger.setLevel(HttpLoggingInterceptor.Level.BASIC))
+                    addInterceptor(logger.setLevel(HttpLoggingInterceptor.Level.BODY))
                 }
             }
             .build()
