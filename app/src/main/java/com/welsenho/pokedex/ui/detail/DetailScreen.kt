@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -91,8 +93,11 @@ fun DetailContent(
                 ),
             )
         },
-        // Bottom inset is handled inside the scrollable content instead.
-        contentWindowInsets = WindowInsets.statusBars,
+        // Top and sides are consumed as fixed padding; the bottom inset is
+        // handled inside the scrollable content instead.
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        ),
     ) { padding ->
         if (pokemon == null) return@Scaffold
 
@@ -104,7 +109,7 @@ fun DetailContent(
                 .padding(horizontal = 24.dp)
                 // Inside the scroll: content draws behind the nav bar but its
                 // tail scrolls clear of it.
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PokemonImage(

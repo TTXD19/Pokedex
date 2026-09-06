@@ -6,13 +6,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -53,15 +55,22 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            Column(Modifier.statusBarsPadding()) {
+            Column(
+                Modifier.windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                )
+            ) {
                 AnimatedVisibility(visible = !state.isOnline) {
                     OfflineBanner()
                 }
             }
         },
-        // Only the top is consumed here; the list draws behind the navigation
-        // bar and keeps its last row clear of it via contentPadding instead.
-        contentWindowInsets = WindowInsets.statusBars,
+        // Top and sides (cutouts, a landscape side nav bar) are consumed as
+        // fixed padding; the bottom stays unconsumed so the list draws behind
+        // the nav bar and keeps its last row clear via contentPadding instead.
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        ),
     ) { padding ->
         when {
             state.showFullScreenError -> FullScreenError(
@@ -107,7 +116,9 @@ private fun HomeContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+        contentPadding = WindowInsets.navigationBars
+            .only(WindowInsetsSides.Bottom)
+            .asPaddingValues(),
     ) {
         val failed = state.syncState as? SyncState.Failed
         if (failed != null && !failed.rosterUnavailable) {
