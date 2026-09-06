@@ -1,5 +1,6 @@
 package com.welsenho.pokedex.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,12 +47,17 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
+            Column {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+                AnimatedVisibility(visible = !state.isOnline) {
+                    OfflineBanner()
+                }
+            }
         },
     ) { padding ->
         when {
@@ -181,6 +187,21 @@ private fun SectionHeader(title: String, count: Int) {
             modifier = Modifier.weight(1f),
         )
         Text(text = "$count", style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+@Composable
+private fun OfflineBanner() {
+    Surface(
+        color = MaterialTheme.colorScheme.inverseSurface,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = "You're offline. Showing saved data.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        )
     }
 }
 

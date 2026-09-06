@@ -3,6 +3,7 @@ package com.welsenho.pokedex.ui.home
 import app.cash.turbine.test
 import com.welsenho.pokedex.data.local.PokemonEntity
 import com.welsenho.pokedex.data.repository.SyncState
+import com.welsenho.pokedex.testing.FakeNetworkMonitor
 import com.welsenho.pokedex.testing.FakePokemonRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,13 +23,17 @@ class HomeViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
     private lateinit var repository: FakePokemonRepository
+    private lateinit var networkMonitor: FakeNetworkMonitor
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         repository = FakePokemonRepository()
+        networkMonitor = FakeNetworkMonitor()
         repository.addPokemon(PokemonEntity(id = 25, name = "pikachu", imageUrl = "url25", detailFetched = true))
     }
+
+    private fun viewModel() = HomeViewModel(repository, networkMonitor)
 
     @After
     fun tearDown() {
@@ -37,7 +42,7 @@ class HomeViewModelTest {
 
     @Test
     fun `starts a sync on creation`() = runTest(dispatcher.scheduler) {
-        val viewModel = HomeViewModel(repository)
+        val viewModel = viewModel()
         dispatcher.scheduler.runCurrent()
 
         assertEquals(1, repository.syncCalls)
@@ -47,7 +52,7 @@ class HomeViewModelTest {
     @Test
     fun `capturing twice shows two entries, releasing one keeps the other`() =
         runTest(dispatcher.scheduler) {
-            val viewModel = HomeViewModel(repository)
+            val viewModel = viewModel()
 
             viewModel.uiState.test {
                 viewModel.capture(25)
@@ -70,7 +75,7 @@ class HomeViewModelTest {
     @Test
     fun `full screen error only when roster unavailable and nothing to show`() =
         runTest(dispatcher.scheduler) {
-            val viewModel = HomeViewModel(repository)
+            val viewModel = viewModel()
 
             viewModel.uiState.test {
                 repository.setSyncState(SyncState.Failed(failedDetails = 0, rosterUnavailable = true))
@@ -88,6 +93,39 @@ class HomeViewModelTest {
                 assertFalse(partialState.showFullScreenError)
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `offline state reaches the ui`() = runTest(dispatcher.scheduler) {
+        val viewModel = viewModel()
+
+        viewModel.uiState.test {
+            networkMonitor.online.value = false
+            val offline = awaitItemWhere { !it.isOnline }
+            assertFalse(offline.isOnline)
+
+            networkMonitor.online.value = true
+            val online = awaitItemWhere { it.isOnline }
+            assertTrue(online.isOnline)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `regaining connectivity triggers a sync, going offline does not`() =
+        runTest(dispatcher.scheduler) {
+            val viewModel = viewModel()
+            dispatcher.scheduler.runCurrent()
+            assertEquals(1, repository.syncCalls) // init only
+
+            networkMonitor.online.value = false
+            dispatcher.scheduler.runCurrent()
+            assertEquals(1, repository.syncCalls)
+
+            networkMonitor.online.value = true
+            dispatcher.scheduler.runCurrent()
+            assertEquals(2, repository.syncCalls)
+            viewModel.uiState.test { cancelAndIgnoreRemainingEvents() }
         }
 
     private suspend fun app.cash.turbine.TurbineTestContext<HomeUiState>.awaitItemWhere(

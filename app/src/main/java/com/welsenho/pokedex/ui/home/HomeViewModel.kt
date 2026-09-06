@@ -2,6 +2,7 @@ package com.welsenho.pokedex.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.welsenho.pokedex.data.network.NetworkMonitor
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import com.welsenho.pokedex.data.repository.SyncState
 import com.welsenho.pokedex.data.repository.TypeGroup
@@ -10,6 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,6 +30,7 @@ data class HomeUiState(
     val syncState: SyncState = SyncState.Idle,
     /** User-initiated pull-to-refresh in flight (not the background sync). */
     val isRefreshing: Boolean = false,
+    val isOnline: Boolean = true,
 ) {
     /** First launch with nothing fetched and the roster unreachable. */
     val showFullScreenError: Boolean
@@ -33,7 +38,10 @@ data class HomeUiState(
             (syncState as? SyncState.Failed)?.rosterUnavailable == true
 }
 
-class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
+class HomeViewModel(
+    private val repository: PokemonRepository,
+    networkMonitor: NetworkMonitor,
+) : ViewModel() {
 
     private val isRefreshing = MutableStateFlow(false)
 
@@ -43,7 +51,8 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
             repository.observeTypeGroups(),
             repository.syncState,
             isRefreshing,
-        ) { captures, groups, sync, refreshing ->
+            networkMonitor.isOnline,
+        ) { captures, groups, sync, refreshing, online ->
             HomeUiState(
                 captured = captures.map {
                     CapturedItem(
@@ -56,6 +65,7 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
                 typeGroups = groups,
                 syncState = sync,
                 isRefreshing = refreshing,
+                isOnline = online,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -65,6 +75,15 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
 
     init {
         sync()
+        // Connectivity coming back is the best moment to finish an interrupted
+        // sync — drop the initial emission so startup doesn't sync twice.
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { it }
+                .collect { repository.sync() }
+        }
     }
 
     fun sync() {

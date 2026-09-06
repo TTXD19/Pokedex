@@ -2,6 +2,8 @@ package com.welsenho.pokedex.di
 
 import com.welsenho.pokedex.BuildConfig
 import com.welsenho.pokedex.data.local.PokedexDatabase
+import com.welsenho.pokedex.data.network.ConnectivityNetworkMonitor
+import com.welsenho.pokedex.data.network.NetworkMonitor
 import com.welsenho.pokedex.data.remote.PokeApiService
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import com.welsenho.pokedex.data.repository.PokemonRepositoryImpl
@@ -50,6 +52,8 @@ val dataModule = module {
     single { get<PokedexDatabase>().captureDao() }
 
     single<PokemonRepository> { PokemonRepositoryImpl(get(), get(), get()) }
+
+    single<NetworkMonitor> { ConnectivityNetworkMonitor(androidContext()) }
 }
 
 val viewModelModule = module {
