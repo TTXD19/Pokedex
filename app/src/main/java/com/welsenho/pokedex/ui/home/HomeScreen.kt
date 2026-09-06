@@ -16,11 +16,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,6 +36,7 @@ import com.welsenho.pokedex.ui.components.PokemonCard
 import com.welsenho.pokedex.ui.preview.PreviewData
 import com.welsenho.pokedex.ui.theme.PokedexTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -67,14 +70,21 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
 
-            else -> HomeContent(
-                state = state,
-                onPokemonClick = onPokemonClick,
-                onCapture = viewModel::capture,
-                onRelease = viewModel::release,
-                onRetry = viewModel::sync,
+            // Pull-to-refresh re-runs sync: it only fetches what's still
+            // missing (failed or interrupted items), never the whole set.
+            else -> PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = viewModel::refresh,
                 modifier = Modifier.padding(padding),
-            )
+            ) {
+                HomeContent(
+                    state = state,
+                    onPokemonClick = onPokemonClick,
+                    onCapture = viewModel::capture,
+                    onRelease = viewModel::release,
+                    onRetry = viewModel::sync,
+                )
+            }
         }
     }
 }

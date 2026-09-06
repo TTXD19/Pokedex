@@ -10,6 +10,8 @@ import com.welsenho.pokedex.PokedexApplication
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import com.welsenho.pokedex.data.repository.SyncState
 import com.welsenho.pokedex.data.repository.TypeGroup
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -27,6 +29,8 @@ data class HomeUiState(
     val captured: List<CapturedItem> = emptyList(),
     val typeGroups: List<TypeGroup> = emptyList(),
     val syncState: SyncState = SyncState.Idle,
+    /** User-initiated pull-to-refresh in flight (not the background sync). */
+    val isRefreshing: Boolean = false,
 ) {
     /** First launch with nothing fetched and the roster unreachable. */
     val showFullScreenError: Boolean
@@ -36,12 +40,15 @@ data class HomeUiState(
 
 class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
 
+    private val isRefreshing = MutableStateFlow(false)
+
     val uiState: StateFlow<HomeUiState> =
         combine(
             repository.observeCaptures(),
             repository.observeTypeGroups(),
             repository.syncState,
-        ) { captures, groups, sync ->
+            isRefreshing,
+        ) { captures, groups, sync, refreshing ->
             HomeUiState(
                 captured = captures.map {
                     CapturedItem(
@@ -53,6 +60,7 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
                 },
                 typeGroups = groups,
                 syncState = sync,
+                isRefreshing = refreshing,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -68,6 +76,20 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
         viewModelScope.launch { repository.sync() }
     }
 
+    /**
+     * Pull-to-refresh. When everything is already fetched, sync returns in
+     * milliseconds — too fast for the indicator's show/hide animation, which
+     * leaves it stuck. The floor keeps the true->false transition observable.
+     */
+    fun refresh() {
+        viewModelScope.launch {
+            isRefreshing.value = true
+            repository.sync()
+            delay(MIN_REFRESH_VISIBLE_MS)
+            isRefreshing.value = false
+        }
+    }
+
     fun capture(pokemonId: Int) {
         viewModelScope.launch { repository.capture(pokemonId) }
     }
@@ -77,6 +99,8 @@ class HomeViewModel(private val repository: PokemonRepository) : ViewModel() {
     }
 
     companion object {
+        private const val MIN_REFRESH_VISIBLE_MS = 400L
+
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PokedexApplication
