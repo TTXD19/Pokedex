@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -60,6 +63,15 @@ class DetailViewModel(
 
     init {
         loadSpecies()
+        // Connectivity coming back retries a failed species load automatically;
+        // when it's already cached this is a single DB check, no request.
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { it }
+                .collect { loadSpecies() }
+        }
     }
 
     fun loadSpecies() {

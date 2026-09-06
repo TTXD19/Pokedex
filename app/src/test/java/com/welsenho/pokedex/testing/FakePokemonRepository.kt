@@ -26,6 +26,8 @@ class FakePokemonRepository : PokemonRepository {
 
     var syncCalls = 0
         private set
+    var ensureSpeciesCalls = 0
+        private set
     var ensureSpeciesResult = true
     private var nextCaptureId = 1L
     private var now = 0L
@@ -66,5 +68,8 @@ class FakePokemonRepository : PokemonRepository {
         syncCalls++
     }
 
-    override suspend fun ensureSpecies(id: Int): Boolean = ensureSpeciesResult
+    override suspend fun ensureSpecies(id: Int): Boolean {
+        ensureSpeciesCalls++
+        return ensureSpeciesResult
+    }
 }
