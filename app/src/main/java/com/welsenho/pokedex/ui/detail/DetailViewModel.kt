@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.welsenho.pokedex.data.local.PokemonEntity
+import com.welsenho.pokedex.data.network.NetworkMonitor
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,10 +25,12 @@ data class DetailUiState(
      */
     val evolvesFromTappable: Boolean = false,
     val evolvesFromImageUrl: String? = null,
+    val isOnline: Boolean = true,
 )
 
 class DetailViewModel(
     private val repository: PokemonRepository,
+    networkMonitor: NetworkMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -40,8 +43,9 @@ class DetailViewModel(
             repository.observePokemon(pokemonId),
             repository.observeTypesOf(pokemonId),
             speciesError,
-        ) { pokemon, types, error ->
-            DetailUiState(pokemon = pokemon, types = types, speciesError = error)
+            networkMonitor.isOnline,
+        ) { pokemon, types, error, online ->
+            DetailUiState(pokemon = pokemon, types = types, speciesError = error, isOnline = online)
         }.map { state ->
             val evolvesFrom = state.pokemon?.evolvesFromId?.let { repository.getPokemon(it) }
             state.copy(

@@ -1,5 +1,6 @@
 package com.welsenho.pokedex.ui.detail
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.welsenho.pokedex.ui.components.OfflineBanner
 import com.welsenho.pokedex.ui.components.PokemonImage
 import com.welsenho.pokedex.ui.preview.PreviewData
 import com.welsenho.pokedex.ui.theme.PokedexTheme
@@ -70,8 +72,9 @@ fun DetailContent(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
+            Column {
+                TopAppBar(
+                    title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -86,10 +89,14 @@ fun DetailContent(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
-            )
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+                )
+                AnimatedVisibility(visible = !state.isOnline) {
+                    OfflineBanner()
+                }
+            }
         },
         // Top and sides are consumed as fixed padding; the bottom inset is
         // handled inside the scrollable content instead.
