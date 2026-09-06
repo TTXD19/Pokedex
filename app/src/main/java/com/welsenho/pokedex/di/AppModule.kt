@@ -1,5 +1,6 @@
 package com.welsenho.pokedex.di
 
+import android.util.Log
 import com.welsenho.pokedex.BuildConfig
 import com.welsenho.pokedex.data.local.PokedexDatabase
 import com.welsenho.pokedex.data.network.ConnectivityNetworkMonitor
@@ -30,9 +31,13 @@ val dataModule = module {
         OkHttpClient.Builder()
             .apply {
                 if (BuildConfig.DEBUG) {
-                    addInterceptor(
-                        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC)
-                    )
+                    // Filter by tag "PokeApi" in Logcat to watch API traffic.
+                    // BASIC logs method/url/status/latency/size; BODY would dump
+                    // PokeAPI's few-hundred-KB payloads and flood the log.
+                    val logger = HttpLoggingInterceptor { message ->
+                        Log.d("PokeApi", message)
+                    }
+                    addInterceptor(logger.setLevel(HttpLoggingInterceptor.Level.BASIC))
                 }
             }
             .build()
