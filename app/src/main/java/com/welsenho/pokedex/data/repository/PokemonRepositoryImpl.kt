@@ -72,15 +72,15 @@ class PokemonRepositoryImpl(
         syncMutex.withLock {
             _syncState.value = SyncState.Running
 
-            if (pokemonDao.countRoster(POKEMON_LIMIT) < POKEMON_LIMIT) {
+            if (pokemonDao.countPokemon(POKEMON_LIMIT) < POKEMON_LIMIT) {
                 try {
-                    val roster = api.getPokemonList(limit = POKEMON_LIMIT)
-                    pokemonDao.insertRoster(
-                        roster.results.map { PokemonEntity(id = it.id, name = it.name) }
+                    val pokemonList = api.getPokemonList(limit = POKEMON_LIMIT)
+                    pokemonDao.insertPokemonList(
+                        pokemonList.results.map { PokemonEntity(id = it.id, name = it.name) }
                     )
                 } catch (e: Exception) {
-                    if (pokemonDao.countRoster(POKEMON_LIMIT) == 0) {
-                        _syncState.value = SyncState.Failed(0, rosterUnavailable = true)
+                    if (pokemonDao.countPokemon(POKEMON_LIMIT) == 0) {
+                        _syncState.value = SyncState.Failed(0, pokemonListUnavailable = true)
                         return
                     }
                     // Partial roster can't happen (single request) — but a stale
@@ -107,7 +107,7 @@ class PokemonRepositoryImpl(
 
             _syncState.value =
                 if (failed.isEmpty()) SyncState.Complete
-                else SyncState.Failed(failed.size, rosterUnavailable = false)
+                else SyncState.Failed(failed.size, pokemonListUnavailable = false)
         }
     }
 
@@ -128,7 +128,7 @@ class PokemonRepositoryImpl(
         return try {
             // Seed a stub row for ids outside the roster (IGNOREd when one
             // exists); fetchAndStoreDetail then fills it like any other.
-            pokemonDao.insertRoster(listOf(PokemonEntity(id = id, name = "")))
+            pokemonDao.insertPokemonList(listOf(PokemonEntity(id = id, name = "")))
             fetchAndStoreDetail(id)
             true
         } catch (e: Exception) {

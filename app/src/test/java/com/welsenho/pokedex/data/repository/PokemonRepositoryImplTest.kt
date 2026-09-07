@@ -35,7 +35,7 @@ class PokemonRepositoryImplTest {
 
     /** Simulates a previous run that died after fetching [fetchedUpTo] details. */
     private suspend fun seedInterruptedSync(fetchedUpTo: Int) {
-        dao.insertRoster((1..151).map { PokemonEntity(id = it, name = "pokemon-$it") })
+        dao.insertPokemonList((1..151).map { PokemonEntity(id = it, name = "pokemon-$it") })
         (1..fetchedUpTo).forEach { dao.updateDetail(it, "pokemon-$it", "https://img/$it.png") }
     }
 
@@ -46,7 +46,7 @@ class PokemonRepositoryImplTest {
 
         repository.sync()
 
-        assertEquals(0, api.rosterCalls) // roster already complete, not re-fetched
+        assertEquals(0, api.pokemonListCalls) // list already complete, not re-fetched
         assertEquals((101..151).toList(), api.detailCalls.sorted())
         assertEquals(emptyList<Int>(), dao.missingDetailIds(151))
         assertEquals(SyncState.Complete, repository.syncState.value)
@@ -59,7 +59,7 @@ class PokemonRepositoryImplTest {
 
         repository.sync()
 
-        assertEquals(0, api.rosterCalls)
+        assertEquals(0, api.pokemonListCalls)
         assertEquals(emptyList<Int>(), api.detailCalls)
         assertEquals(SyncState.Complete, repository.syncState.value)
     }
@@ -73,7 +73,7 @@ class PokemonRepositoryImplTest {
         repository.sync()
 
         assertEquals(
-            SyncState.Failed(failedDetails = 7, rosterUnavailable = false),
+            SyncState.Failed(failedDetails = 7, pokemonListUnavailable = false),
             repository.syncState.value,
         )
         // Only the failed ids are still missing; successes all landed.
@@ -97,14 +97,14 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `first launch offline reports the roster as unavailable`() = runTest {
-        api.rosterFails = true
+    fun `first launch offline reports the pokemon list as unavailable`() = runTest {
+        api.pokemonListFails = true
         val repository = repository()
 
         repository.sync()
 
         assertEquals(
-            SyncState.Failed(failedDetails = 0, rosterUnavailable = true),
+            SyncState.Failed(failedDetails = 0, pokemonListUnavailable = true),
             repository.syncState.value,
         )
         assertEquals(emptyList<Int>(), api.detailCalls) // gave up before details

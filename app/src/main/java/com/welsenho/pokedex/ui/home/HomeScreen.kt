@@ -132,7 +132,7 @@ private fun HomeContent(
             .asPaddingValues(),
     ) {
         val failed = state.syncState as? SyncState.Failed
-        if (failed != null && !failed.rosterUnavailable) {
+        if (failed != null && !failed.pokemonListUnavailable) {
             item(key = "sync_banner") {
                 SyncBanner(failedCount = failed.failedDetails, onRetry = onRetry)
             }
@@ -320,7 +320,7 @@ private fun HomePartialFailurePreview() {
             state = HomeUiState(
                 captured = PreviewData.captured,
                 typeGroups = PreviewData.typeGroups,
-                syncState = SyncState.Failed(failedDetails = 7, rosterUnavailable = false),
+                syncState = SyncState.Failed(failedDetails = 7, pokemonListUnavailable = false),
             ),
             onPokemonClick = {}, onCapture = {}, onRelease = {}, onRetry = {},
         )

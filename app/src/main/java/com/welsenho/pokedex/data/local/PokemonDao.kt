@@ -16,9 +16,9 @@ data class TypeRow(
 @Dao
 interface PokemonDao {
 
-    /** Roster insert must not clobber rows that already carry fetched detail. */
+    /** List insert must not clobber rows that already carry fetched detail. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertRoster(pokemon: List<PokemonEntity>)
+    suspend fun insertPokemonList(pokemon: List<PokemonEntity>)
 
     /**
      * Rows with id > limit are cached on demand for the detail screen (e.g.
@@ -27,7 +27,7 @@ interface PokemonDao {
      * roster is exactly ids 1..151.
      */
     @Query("SELECT COUNT(*) FROM pokemon WHERE id <= :limit")
-    suspend fun countRoster(limit: Int): Int
+    suspend fun countPokemon(limit: Int): Int
 
     @Query("SELECT id FROM pokemon WHERE detailFetched = 0 AND id <= :limit ORDER BY id")
     suspend fun missingDetailIds(limit: Int): List<Int>

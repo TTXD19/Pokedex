@@ -14,7 +14,7 @@ data class HomeUiState(
     /** First launch with nothing fetched and the roster unreachable. */
     val showFullScreenError: Boolean
         get() = typeGroups.isEmpty() &&
-            (syncState as? SyncState.Failed)?.rosterUnavailable == true
+            (syncState as? SyncState.Failed)?.pokemonListUnavailable == true
 
     companion object{
         data class CapturedItem(

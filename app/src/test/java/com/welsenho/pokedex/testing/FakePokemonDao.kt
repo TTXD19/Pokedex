@@ -16,12 +16,12 @@ class FakePokemonDao : PokemonDao {
     val pokemon = MutableStateFlow<Map<Int, PokemonEntity>>(emptyMap())
     val types = MutableStateFlow<Map<Pair<Int, String>, PokemonTypeEntity>>(emptyMap())
 
-    override suspend fun insertRoster(pokemon: List<PokemonEntity>) {
+    override suspend fun insertPokemonList(pokemon: List<PokemonEntity>) {
         // OnConflictStrategy.IGNORE: never clobber existing rows.
         this.pokemon.update { map -> map + pokemon.filter { it.id !in map }.associateBy { it.id } }
     }
 
-    override suspend fun countRoster(limit: Int): Int =
+    override suspend fun countPokemon(limit: Int): Int =
         pokemon.value.keys.count { it <= limit }
 
     override suspend fun missingDetailIds(limit: Int): List<Int> =
