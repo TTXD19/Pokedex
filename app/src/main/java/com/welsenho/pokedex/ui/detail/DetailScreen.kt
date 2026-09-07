@@ -1,7 +1,7 @@
 package com.welsenho.pokedex.ui.detail
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,46 +70,46 @@ fun DetailContent(
 ) {
     val pokemon = state.pokemon
 
-    Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    pokemon?.let {
-                        Text(
-                            text = "#${it.id}",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(end = 16.dp),
-                        )
-                    }
-                },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-                )
-                AnimatedVisibility(visible = !state.isOnline) {
-                    OfflineBanner()
+    // Top and sides are padded once here; the bottom inset is handled inside
+    // the scrollable content instead so it can draw behind the nav bar.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+            ),
+    ) {
+        TopAppBar(
+            title = {},
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-            }
-        },
-        // Top and sides are consumed as fixed padding; the bottom inset is
-        // handled inside the scrollable content instead.
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        ),
-    ) { padding ->
+            },
+            actions = {
+                pokemon?.let {
+                    Text(
+                        text = "#${it.id}",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(end = 16.dp),
+                    )
+                }
+            },
+            // The parent Column already applied the status-bar / cutout insets.
+            windowInsets = WindowInsets(0, 0, 0, 0),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+            ),
+        )
+        AnimatedVisibility(visible = !state.isOnline) {
+            OfflineBanner()
+        }
+
         if (pokemon == null) {
             // Not in the DB yet: an out-of-roster id being fetched, or offline.
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 if (state.detailError) {
@@ -126,54 +125,52 @@ fun DetailContent(
                     CircularProgressIndicator()
                 }
             }
-            return@Scaffold
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                // Inside the scroll: content draws behind the nav bar but its
-                // tail scrolls clear of it.
-                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            PokemonImage(
-                imageUrl = pokemon.imageUrl,
-                contentDescription = pokemon.name,
+        } else {
+            Column(
                 modifier = Modifier
-                    .padding(top = 16.dp)
-                    .size(220.dp),
-            )
-            Text(
-                text = pokemon.name.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 8.dp),
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+                    // Inside the scroll: content draws behind the nav bar but its
+                    // tail scrolls clear of it.
+                    .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                state.types.forEach { TypeChip(it) }
-            }
+                PokemonImage(
+                    imageUrl = pokemon.imageUrl,
+                    contentDescription = pokemon.name,
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .size(220.dp),
+                )
+                Text(
+                    text = pokemon.name.replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    state.types.forEach { TypeChip(it) }
+                }
 
-            if (pokemon.evolvesFromName != null) {
-                EvolvesFromRow(
-                    name = pokemon.evolvesFromName,
-                    imageUrl = state.evolvesFromImageUrl,
-                    tappable = state.evolvesFromTappable,
-                    onClick = { pokemon.evolvesFromId?.let(onNavigateToPokemon) },
+                if (pokemon.evolvesFromName != null) {
+                    EvolvesFromRow(
+                        name = pokemon.evolvesFromName,
+                        imageUrl = state.evolvesFromImageUrl,
+                        tappable = state.evolvesFromTappable,
+                        onClick = { pokemon.evolvesFromId?.let(onNavigateToPokemon) },
+                    )
+                }
+
+                DescriptionSection(
+                    fetched = pokemon.speciesFetched,
+                    description = pokemon.description,
+                    error = state.speciesError,
+                    onRetry = onRetry,
                 )
             }
-
-            DescriptionSection(
-                fetched = pokemon.speciesFetched,
-                description = pokemon.description,
-                error = state.speciesError,
-                onRetry = onRetry,
-            )
         }
     }
 }

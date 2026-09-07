@@ -1,6 +1,7 @@
 package com.welsenho.pokedex.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,53 +54,46 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            Column(
-                Modifier.windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-                )
-            ) {
-                AnimatedVisibility(visible = !state.isOnline) {
-                    OfflineBanner()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+            ),
+    ) {
+        AnimatedVisibility(visible = !state.isOnline) {
+            OfflineBanner()
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            when {
+                state.showFullScreenError -> FullScreenError(onRetry = viewModel::sync)
+
+                state.typeGroups.isEmpty() && state.captured.isEmpty() &&
+                        state.syncState !is SyncState.Failed -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
                 }
-            }
-        },
-        // Top and sides (cutouts, a landscape side nav bar) are consumed as
-        // fixed padding; the bottom stays unconsumed so the list draws behind
-        // the nav bar and keeps its last row clear via contentPadding instead.
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        ),
-    ) { padding ->
-        when {
-            state.showFullScreenError -> FullScreenError(
-                onRetry = viewModel::sync,
-                modifier = Modifier.padding(padding),
-            )
 
-            state.typeGroups.isEmpty() && state.captured.isEmpty() &&
-                state.syncState !is SyncState.Failed -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-
-            else -> PullToRefreshBox(
-                isRefreshing = state.isRefreshing,
-                onRefresh = viewModel::refresh,
-                modifier = Modifier.padding(padding),
-            ) {
-                HomeContent(
-                    state = state,
-                    onPokemonClick = onPokemonClick,
-                    onCapture = viewModel::capture,
-                    onRelease = viewModel::release,
-                    onRetry = viewModel::sync,
-                )
+                else -> PullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = viewModel::refresh,
+                ) {
+                    HomeContent(
+                        state = state,
+                        onPokemonClick = onPokemonClick,
+                        onCapture = viewModel::capture,
+                        onRelease = viewModel::release,
+                        onRetry = viewModel::sync,
+                    )
+                }
             }
         }
     }
