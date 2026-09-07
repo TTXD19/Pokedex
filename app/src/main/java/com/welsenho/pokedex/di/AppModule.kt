@@ -33,11 +33,6 @@ val dataModule = module {
         OkHttpClient.Builder()
             .apply {
                 if (BuildConfig.DEBUG) {
-                    // Filter by tag "PokeApi" in Logcat to watch API traffic,
-                    // including request/response headers and JSON bodies.
-                    // PokeAPI bodies run to hundreds of KB and Android's Log
-                    // hard-cuts around 4K anyway, so long lines are truncated
-                    // explicitly with the original size noted.
                     val logger = HttpLoggingInterceptor { message ->
                         val line =
                             if (message.length > MAX_LOG_LINE_CHARS) {
@@ -53,7 +48,6 @@ val dataModule = module {
             }
             .build()
     }
-
     single<PokeApiService> {
         Retrofit.Builder()
             .baseUrl("https://pokeapi.co/api/v2/")
@@ -62,13 +56,10 @@ val dataModule = module {
             .build()
             .create(PokeApiService::class.java)
     }
-
     single { PokedexDatabase.create(androidContext()) }
     single { get<PokedexDatabase>().pokemonDao() }
     single { get<PokedexDatabase>().captureDao() }
-
     single<PokemonRepository> { PokemonRepositoryImpl(get(), get(), get()) }
-
     single<NetworkMonitor> { ConnectivityNetworkMonitor(androidContext()) }
 }
 
