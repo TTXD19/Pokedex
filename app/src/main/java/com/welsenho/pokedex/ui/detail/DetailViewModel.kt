@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 data class DetailUiState(
     val pokemon: PokemonEntity? = null,
     val types: List<String> = emptyList(),
-    /** The Pokémon itself couldn't be fetched (out-of-roster id, offline). */
+    /** The Pokémon itself couldn't be fetched (id outside the 151, offline). */
     val detailError: Boolean = false,
     /** Species (description / evolves-from) fetch failed; offer retry. */
     val speciesError: Boolean = false,
@@ -85,7 +85,7 @@ class DetailViewModel(
         viewModelScope.launch {
             detailError.value = false
             speciesError.value = false
-            // Detail first: out-of-roster ids (e.g. Igglybuff #174) have no row
+            // Detail first: ids outside the 151 (e.g. Igglybuff #174) have no row
             // yet, and the species write needs one to land in.
             val detailOk = repository.ensureDetail(pokemonId)
             detailError.value = !detailOk

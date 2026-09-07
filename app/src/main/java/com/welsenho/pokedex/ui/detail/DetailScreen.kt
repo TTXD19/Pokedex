@@ -107,7 +107,7 @@ fun DetailContent(
         }
 
         if (pokemon == null) {
-            // Not in the DB yet: an out-of-roster id being fetched, or offline.
+            // Not in the DB yet: an id outside the 151 being fetched, or offline.
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -293,7 +293,7 @@ private fun DetailPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun DetailEvolvesFromOutsideRosterPreview() {
+private fun DetailEvolvesFromOutside151Preview() {
     // Pikachu evolves from Pichu (#172), outside the 151: tappable (fetched on
     // demand), thumbnail blank until its detail has been cached.
     PokedexTheme {

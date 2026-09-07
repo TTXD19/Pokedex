@@ -18,8 +18,8 @@ is assumed-and-documented:
   devices (foldables), so home is white edge-to-edge; the detail app bar followed
   for consistency. I read the mock's intent as "a coherent look", not "this hex".
 - **Evolves-from outside the 151** — Pikachu → Pichu (#172), Jigglypuff →
-  Igglybuff (#174) etc. point outside the roster. I initially rendered them
-  non-tappable; that confused even me during testing, so out-of-roster Pokémon
+  Igglybuff (#174) etc. point outside the 151. I initially rendered them
+  non-tappable; that confused even me during testing, so Pokémon outside the 151
   are now fetched on demand for detail viewing while the collection stays
   strictly 151 (queries scope to `id <= 151`).
 - **API politeness** — the spec invites asking how hard to hit PokeAPI; with
@@ -69,11 +69,11 @@ resume mechanism — after process death, `WHERE detailFetched = 0` *is* the wor
 queue. The alternative (in-memory progress tracking) would have needed separate
 persistence and could drift from the data it describes.
 
-Late change: out-of-roster Pokémon share the `pokemon` table, and roster
-membership is expressed as `id <= 151` in the collection/sync queries rather
-than a schema column. That leans on the roster being a fixed id-prefix (true for
-this assignment's endpoint); a non-contiguous roster would break it, and then
-I'd add an `inRoster` column with a one-line migration.
+Late change: Pokémon outside the 151 share the `pokemon` table, and membership
+in the 151 is expressed as `id <= 151` in the collection/sync queries rather
+than a schema column. That leans on the 151 being a fixed id-prefix (true for
+this assignment's endpoint); a non-contiguous list would break it, and then
+I'd add an `inList` column with a one-line migration.
 
 ## 3. The requirement I was least confident about
 
@@ -82,12 +82,12 @@ to believe and hard to know. What I actually did:
 
 - Unit tests run the real `PokemonRepositoryImpl` against programmable fakes:
   seeded a DB that "died" at 100/151, ran sync, asserted the API received
-  exactly the 51 missing ids and zero roster refetch; fully-synced → zero
+  exactly the 51 missing ids and zero list refetch; fully-synced → zero
   requests; 7 injected failures → `Failed(7)` with the other 144 landed;
   retry → exactly those 7; peak in-flight concurrency == 5.
 - On device: killed the app mid-sync and relaunched (fetch continued from the
   gap); watched logcat with a dedicated `PokeApi` tag — a fresh install logs
-  exactly 1 roster + 151 detail requests, and pull-to-refresh afterwards logs
+  exactly 1 list + 151 detail requests, and pull-to-refresh afterwards logs
   none.
 - "Display content as soon as fetched" was verified by screenshotting mid-sync:
   section counts visibly grow (Bug 10→12) instead of appearing all at once.
@@ -134,7 +134,7 @@ did not go where I expected:
 - The unplanned majority went to **on-device polish and the bugs only devices
   reveal**: the stuck refresh indicator, the missing network permission,
   edge-to-edge insets across three screen shapes (phone/foldable/landscape
-  cutouts), and the out-of-roster evolves-from rabbit hole — which started as
+  cutouts), and the outside-the-151 evolves-from rabbit hole — which started as
   "why can't I tap Igglybuff" and ended as a scope decision, a data-boundary
   design, and a UX affordance fix.
 

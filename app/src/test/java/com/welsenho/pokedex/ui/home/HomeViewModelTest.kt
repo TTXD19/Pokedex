@@ -73,12 +73,12 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `full screen error only when roster unavailable and nothing to show`() =
+    fun `full screen error only when the Pokémon list is unavailable and nothing to show`() =
         runTest(dispatcher.scheduler) {
             val viewModel = viewModel()
 
             viewModel.uiState.test {
-                repository.setSyncState(SyncState.Failed(failedDetails = 0, rosterUnavailable = true))
+                repository.setSyncState(SyncState.Failed(failedDetails = 0, pokemonListUnavailable = true))
                 val errorState = awaitItemWhere { it.syncState is SyncState.Failed }
                 assertTrue(errorState.showFullScreenError)
 

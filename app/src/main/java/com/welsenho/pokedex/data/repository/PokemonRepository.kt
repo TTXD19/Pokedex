@@ -23,7 +23,7 @@ interface PokemonRepository {
 
     fun observeTypesOf(id: Int): Flow<List<String>>
 
-    /** One-shot read; null when the id is outside our roster (e.g. Pichu #172). */
+    /** One-shot read; null when the id is outside the 151 (e.g. Pichu #172). */
     suspend fun getPokemon(id: Int): PokemonEntity?
 
     /** Records one capture event; the same Pokémon can be captured repeatedly. */
@@ -33,7 +33,7 @@ interface PokemonRepository {
     suspend fun release(captureId: Long)
 
     /**
-     * Resumable sync: fetches the roster if missing, then only the details not
+     * Resumable sync: fetches the Pokémon list if missing, then only the details not
      * yet in the DB, committing each success immediately.
      */
     suspend fun sync()
@@ -46,7 +46,7 @@ interface PokemonRepository {
 
     /**
      * Makes sure this Pokémon's detail (name, image, types) is in the DB,
-     * fetching it if needed — including ids outside the 151 roster, which are
+     * fetching it if needed — including ids outside the 151, which are
      * cached for detail viewing but never shown in the collection.
      * Returns false on failure so the caller can offer a retry.
      */

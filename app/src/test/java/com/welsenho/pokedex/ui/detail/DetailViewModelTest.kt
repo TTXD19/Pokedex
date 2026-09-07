@@ -47,7 +47,7 @@ class DetailViewModelTest {
     )
 
     @Test
-    fun `out-of-roster id is fetched on demand and shown`() =
+    fun `id outside the 151 is fetched on demand and shown`() =
         runTest(dispatcher.scheduler) {
             val viewModel = viewModel(pokemonId = 174) // Igglybuff, not seeded
 
@@ -60,7 +60,7 @@ class DetailViewModelTest {
         }
 
     @Test
-    fun `failed out-of-roster fetch shows error and recovers on reconnect`() =
+    fun `failed fetch of an id outside the 151 shows error and recovers on reconnect`() =
         runTest(dispatcher.scheduler) {
             repository.ensureDetailResult = false
             val viewModel = viewModel(pokemonId = 174)

@@ -18,10 +18,10 @@ import kotlinx.coroutines.delay
  */
 class FakePokeApiService : PokeApiService {
 
-    var rosterFails = false
+    var pokemonListFails = false
     var failingDetailIds: Set<Int> = emptySet()
 
-    var rosterCalls = 0
+    var pokemonListCalls = 0
         private set
     val detailCalls = mutableListOf<Int>()
 
@@ -30,8 +30,8 @@ class FakePokeApiService : PokeApiService {
         private set
 
     override suspend fun getPokemonList(limit: Int, offset: Int): PokemonListResponse {
-        rosterCalls++
-        if (rosterFails) throw IOException("no network")
+        pokemonListCalls++
+        if (pokemonListFails) throw IOException("no network")
         return PokemonListResponse(
             count = limit,
             results = (1..limit).map {

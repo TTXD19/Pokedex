@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * One row per Pokémon. Rows are created from the roster fetch (id + name only);
+ * One row per Pokémon. Rows are created from the Pokémon list fetch (id + name only);
  * detail and species fields are filled in later. The two *Fetched flags are what
  * makes sync resumable: after process death we re-fetch only rows still false.
  */
