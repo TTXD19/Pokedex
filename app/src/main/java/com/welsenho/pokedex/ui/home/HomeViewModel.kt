@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.welsenho.pokedex.data.network.NetworkMonitor
 import com.welsenho.pokedex.data.repository.PokemonRepository
-import com.welsenho.pokedex.data.repository.SyncState
-import com.welsenho.pokedex.data.repository.TypeGroup
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,31 +14,11 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-data class CapturedItem(
-    val captureId: Long,
-    val pokemonId: Int,
-    val name: String,
-    val imageUrl: String?,
-)
-
-data class HomeUiState(
-    val captured: List<CapturedItem> = emptyList(),
-    val typeGroups: List<TypeGroup> = emptyList(),
-    val syncState: SyncState = SyncState.Idle,
-    /** User-initiated pull-to-refresh in flight (not the background sync). */
-    val isRefreshing: Boolean = false,
-    val isOnline: Boolean = true,
-) {
-    /** First launch with nothing fetched and the roster unreachable. */
-    val showFullScreenError: Boolean
-        get() = typeGroups.isEmpty() &&
-            (syncState as? SyncState.Failed)?.rosterUnavailable == true
-}
+import kotlin.time.Duration.Companion.milliseconds
 
 class HomeViewModel(
     private val repository: PokemonRepository,
-    networkMonitor: NetworkMonitor,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val isRefreshing = MutableStateFlow(false)
@@ -55,7 +33,7 @@ class HomeViewModel(
         ) { captures, groups, sync, refreshing, online ->
             HomeUiState(
                 captured = captures.map {
-                    CapturedItem(
+                    HomeUiState.Companion.CapturedItem(
                         captureId = it.capture.id,
                         pokemonId = it.pokemon.id,
                         name = it.pokemon.name,
@@ -99,7 +77,7 @@ class HomeViewModel(
         viewModelScope.launch {
             isRefreshing.value = true
             repository.sync()
-            delay(MIN_REFRESH_VISIBLE_MS)
+            delay(MIN_REFRESH_VISIBLE_MS.milliseconds)
             isRefreshing.value = false
         }
     }

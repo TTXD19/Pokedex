@@ -2,7 +2,7 @@ package com.welsenho.pokedex.ui.preview
 
 import com.welsenho.pokedex.data.local.PokemonEntity
 import com.welsenho.pokedex.data.repository.TypeGroup
-import com.welsenho.pokedex.ui.home.CapturedItem
+import com.welsenho.pokedex.ui.home.HomeUiState
 
 /** Sample data for @Preview composables only — never used at runtime. */
 internal object PreviewData {
@@ -35,8 +35,23 @@ internal object PreviewData {
     )
 
     val captured = listOf(
-        CapturedItem(captureId = 3, pokemonId = 147, name = "dratini", imageUrl = null),
-        CapturedItem(captureId = 2, pokemonId = 25, name = "pikachu", imageUrl = null),
-        CapturedItem(captureId = 1, pokemonId = 25, name = "pikachu", imageUrl = null),
+        HomeUiState.Companion.CapturedItem(
+            captureId = 3,
+            pokemonId = 147,
+            name = "dratini",
+            imageUrl = null
+        ),
+        HomeUiState.Companion.CapturedItem(
+            captureId = 2,
+            pokemonId = 25,
+            name = "pikachu",
+            imageUrl = null
+        ),
+        HomeUiState.Companion.CapturedItem(
+            captureId = 1,
+            pokemonId = 25,
+            name = "pikachu",
+            imageUrl = null
+        ),
     )
 }
