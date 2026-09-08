@@ -3,7 +3,6 @@ package com.welsenho.pokedex.ui.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.welsenho.pokedex.data.local.PokemonEntity
 import com.welsenho.pokedex.data.network.NetworkMonitor
 import com.welsenho.pokedex.data.repository.PokemonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,19 +15,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-data class DetailUiState(
-    val pokemon: PokemonEntity? = null,
-    val types: List<String> = emptyList(),
-    /** The Pokémon itself couldn't be fetched (id outside the 151, offline). */
-    val detailError: Boolean = false,
-    /** Species (description / evolves-from) fetch failed; offer retry. */
-    val speciesError: Boolean = false,
-    /** Pre-evolutions outside the 151 are fetched on demand, so always tappable. */
-    val evolvesFromTappable: Boolean = false,
-    val evolvesFromImageUrl: String? = null,
-    val isOnline: Boolean = true,
-)
 
 class DetailViewModel(
     private val repository: PokemonRepository,
