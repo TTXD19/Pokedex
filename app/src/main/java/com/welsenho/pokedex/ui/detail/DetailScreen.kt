@@ -2,6 +2,7 @@ package com.welsenho.pokedex.ui.detail
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -23,19 +26,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,7 +62,6 @@ fun DetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailContent(
     state: DetailUiState,
@@ -69,9 +70,6 @@ fun DetailContent(
     onRetry: () -> Unit,
 ) {
     val pokemon = state.pokemon
-
-    // Top and sides are padded once here; the bottom inset is handled inside
-    // the scrollable content instead so it can draw behind the nav bar.
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,34 +78,12 @@ fun DetailContent(
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
             ),
     ) {
-        TopAppBar(
-            title = {},
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            actions = {
-                pokemon?.let {
-                    Text(
-                        text = "#${it.id}",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(end = 16.dp),
-                    )
-                }
-            },
-            // The parent Column already applied the status-bar / cutout insets.
-            windowInsets = WindowInsets(0, 0, 0, 0),
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-            ),
-        )
+        DetailTopBar(pokemonId = pokemon?.id, onBack = onBack)
         AnimatedVisibility(visible = !state.isOnline) {
             OfflineBanner()
         }
 
         if (pokemon == null) {
-            // Not in the DB yet: an id outside the 151 being fetched, or offline.
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -176,6 +152,29 @@ fun DetailContent(
 }
 
 @Composable
+private fun DetailTopBar(pokemonId: Int?, onBack: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(horizontal = 4.dp),
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        }
+        Spacer(Modifier.weight(1f))
+        pokemonId?.let {
+            Text(
+                text = "#$it",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(end = 16.dp),
+            )
+        }
+    }
+}
+
+@Composable
 private fun TypeChip(name: String) {
     Surface(
         shape = RoundedCornerShape(50),
@@ -189,7 +188,6 @@ private fun TypeChip(name: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EvolvesFromRow(
     name: String,
@@ -197,16 +195,15 @@ private fun EvolvesFromRow(
     tappable: Boolean,
     onClick: () -> Unit,
 ) {
-    // A tonal card with a trailing chevron so the tap-through to the
-    // pre-evolution's detail is obvious, not a hidden hit area.
+    val shape = RoundedCornerShape(16.dp)
     Surface(
-        onClick = onClick,
-        enabled = tappable,
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp),
+            .padding(top = 24.dp)
+            .clip(shape)
+            .clickable(enabled = tappable, role = Role.Button, onClick = onClick),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -294,8 +291,6 @@ private fun DetailPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun DetailEvolvesFromOutside151Preview() {
-    // Pikachu evolves from Pichu (#172), outside the 151: tappable (fetched on
-    // demand), thumbnail blank until its detail has been cached.
     PokedexTheme {
         DetailContent(
             state = DetailUiState(
