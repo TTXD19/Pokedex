@@ -53,8 +53,6 @@ class HomeViewModel(
 
     init {
         sync()
-        // Connectivity coming back is the best moment to finish an interrupted
-        // sync — drop the initial emission so startup doesn't sync twice.
         viewModelScope.launch {
             networkMonitor.isOnline
                 .distinctUntilChanged()

@@ -21,10 +21,10 @@ class FakePokemonDao : PokemonDao {
         this.pokemon.update { map -> map + pokemon.filter { it.id !in map }.associateBy { it.id } }
     }
 
-    override suspend fun countPokemonList(limit: Int): Int =
+    override suspend fun getPokemonListSize(limit: Int): Int =
         pokemon.value.keys.count { it <= limit }
 
-    override suspend fun missingDetailIds(limit: Int): List<Int> =
+    override suspend fun getMissingDetailIdsList(limit: Int): List<Int> =
         pokemon.value.values.filter { !it.detailFetched && it.id <= limit }.map { it.id }.sorted()
 
     override suspend fun updateDetail(id: Int, name: String, imageUrl: String?) {

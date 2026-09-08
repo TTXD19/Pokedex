@@ -73,7 +73,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `full screen error only when the Pokémon list is unavailable and nothing to show`() =
+    fun `full screen error only when pokemon list unavailable and nothing to show`() =
         runTest(dispatcher.scheduler) {
             val viewModel = viewModel()
 

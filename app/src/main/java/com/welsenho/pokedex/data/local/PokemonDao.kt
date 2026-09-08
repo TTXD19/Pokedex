@@ -16,7 +16,7 @@ data class TypeRow(
 @Dao
 interface PokemonDao {
 
-    /** The list insert must not clobber rows that already carry fetched detail. */
+    /** List insert must not clobber rows that already carry fetched detail. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertPokemonList(pokemon: List<PokemonEntity>)
 
@@ -27,10 +27,10 @@ interface PokemonDao {
      * list is exactly ids 1..151.
      */
     @Query("SELECT COUNT(*) FROM pokemon WHERE id <= :limit")
-    suspend fun countPokemonList(limit: Int): Int
+    suspend fun getPokemonListSize(limit: Int): Int
 
     @Query("SELECT id FROM pokemon WHERE detailFetched = 0 AND id <= :limit ORDER BY id")
-    suspend fun missingDetailIds(limit: Int): List<Int>
+    suspend fun getMissingDetailIdsList(limit: Int): List<Int>
 
     @Query(
         "UPDATE pokemon SET name = :name, imageUrl = :imageUrl, detailFetched = 1 WHERE id = :id"
