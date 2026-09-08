@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PokedexTheme {
-                PokedexApp()
+                PokedexApp(onExit = ::finish)
             }
         }
     }

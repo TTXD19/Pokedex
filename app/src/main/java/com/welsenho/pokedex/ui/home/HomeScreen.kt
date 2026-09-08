@@ -1,5 +1,6 @@
 package com.welsenho.pokedex.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,8 +50,18 @@ import com.welsenho.pokedex.ui.theme.PokedexTheme
 fun HomeScreen(
     viewModel: HomeViewModel,
     onPokemonClick: (Int) -> Unit,
+    onExit: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    var showExitDialog by remember { mutableStateOf(false) }
+    BackHandler { showExitDialog = true }
+    if (showExitDialog) {
+        ExitDialog(
+            onConfirm = onExit,
+            onDismiss = { showExitDialog = false },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -225,6 +236,21 @@ private fun CapturedPokemonDialog(
 }
 
 @Composable
+private fun ExitDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Leave Pokédex?") },
+        text = { Text("Your captured Pokémon are saved and will be here when you come back.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("Exit") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
 private fun SectionHeader(title: String, count: Int) {
     Row(
         modifier = Modifier
@@ -334,6 +360,14 @@ private fun CapturedPokemonDialogPreview() {
             onRelease = {},
             onDismiss = {},
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExitDialogPreview() {
+    PokedexTheme {
+        ExitDialog(onConfirm = {}, onDismiss = {})
     }
 }
 

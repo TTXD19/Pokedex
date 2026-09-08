@@ -13,7 +13,7 @@ import com.welsenho.pokedex.ui.home.HomeViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun PokedexApp() {
+fun PokedexApp(onExit: () -> Unit) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "home") {
@@ -22,6 +22,7 @@ fun PokedexApp() {
             HomeScreen(
                 viewModel = viewModel,
                 onPokemonClick = { id -> navController.navigate("detail/$id") },
+                onExit = onExit,
             )
         }
         composable(
