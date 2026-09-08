@@ -19,8 +19,14 @@ interface PokemonRepository {
     /** Most recent capture first. */
     fun observeCaptures(): Flow<List<CaptureWithPokemon>>
 
+    /**
+     * One Pokémon's row as it fills in: null until the row exists (an id
+     * outside the 151 being fetched on demand), then re-emits as detail and
+     * species data land.
+     */
     fun observePokemon(id: Int): Flow<PokemonEntity?>
 
+    /** Type names for one Pokémon, primary type first (PokeAPI slot order). */
     fun observeTypesOf(id: Int): Flow<List<String>>
 
     /** One-shot read; null when the id is outside the 151 (e.g. Pichu #172). */
