@@ -9,9 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -29,7 +28,7 @@ class HomeViewModel(
             repository.observeTypeGroups(),
             repository.syncState,
             isRefreshing,
-            networkMonitor.isOnline,
+            networkMonitor.isOnline(),
         ) { captures, groups, sync, refreshing, online ->
             HomeUiState(
                 captured = captures.map {
@@ -53,13 +52,13 @@ class HomeViewModel(
 
     init {
         sync()
-        viewModelScope.launch {
-            networkMonitor.isOnline
-                .distinctUntilChanged()
-                .drop(1)
-                .filter { it }
-                .collect { repository.sync() }
-        }
+        syncWhenBackOnline()
+    }
+
+    private fun syncWhenBackOnline() {
+        networkMonitor.connectivityRestored()
+            .onEach { repository.sync() }
+            .launchIn(viewModelScope)
     }
 
     fun sync() {

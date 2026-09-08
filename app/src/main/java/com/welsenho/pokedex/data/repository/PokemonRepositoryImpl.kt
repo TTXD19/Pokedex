@@ -123,8 +123,6 @@ class PokemonRepositoryImpl(
     override suspend fun ensureDetail(id: Int): Boolean {
         if (pokemonDao.getPokemon(id)?.detailFetched == true) return true
         return try {
-            // Seed a stub row for ids outside the 151 (IGNOREd when one
-            // exists); fetchAndStoreDetail then fills it like any other.
             pokemonDao.insertPokemonList(listOf(PokemonEntity(id = id, name = "")))
             fetchAndStoreDetail(id)
             true

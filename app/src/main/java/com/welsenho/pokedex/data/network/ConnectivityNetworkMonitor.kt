@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 class ConnectivityNetworkMonitor(private val context: Context) : NetworkMonitor {
 
-    override val isOnline: Flow<Boolean> = callbackFlow {
+    override fun isOnline(): Flow<Boolean> = callbackFlow {
         val manager = context.getSystemService(ConnectivityManager::class.java)
         if (manager == null) {
             trySend(false)
@@ -21,9 +21,6 @@ class ConnectivityNetworkMonitor(private val context: Context) : NetworkMonitor 
             return@callbackFlow
         }
 
-        // Track all internet-capable networks: switching wifi -> cellular fires
-        // onLost for one after onAvailable for the other, so a single boolean
-        // would flicker to offline during the handover.
         val networks = mutableSetOf<Network>()
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
@@ -44,11 +41,9 @@ class ConnectivityNetworkMonitor(private val context: Context) : NetworkMonitor 
             callback,
         )
         trySend(manager.isCurrentlyOnline())
-
         awaitClose { manager.unregisterNetworkCallback(callback) }
-    }
-        .distinctUntilChanged()
-        .conflate()
+
+    }.distinctUntilChanged().conflate()
 
     private fun ConnectivityManager.isCurrentlyOnline(): Boolean =
         getNetworkCapabilities(activeNetwork)

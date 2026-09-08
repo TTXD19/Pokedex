@@ -9,16 +9,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class DetailViewModel(
     private val repository: PokemonRepository,
-    networkMonitor: NetworkMonitor,
+    private val networkMonitor: NetworkMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -33,7 +32,7 @@ class DetailViewModel(
             repository.observeTypesOf(pokemonId),
             detailError,
             speciesError,
-            networkMonitor.isOnline,
+            networkMonitor.isOnline(),
         ) { pokemon, types, dError, sError, online ->
             DetailUiState(
                 pokemon = pokemon,
@@ -50,35 +49,30 @@ class DetailViewModel(
             )
         }.stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = DetailUiState(),
         )
 
     init {
-        load()
-        // Connectivity coming back retries whatever failed automatically;
-        // when everything is cached this is DB checks only, no requests.
-        viewModelScope.launch {
-            networkMonitor.isOnline
-                .distinctUntilChanged()
-                .drop(1)
-                .filter { it }
-                .collect { load() }
-        }
+        loadPokemonData()
+        reloadWhenBackOnline()
     }
 
-    fun load() {
+    private fun reloadWhenBackOnline() {
+        networkMonitor.connectivityRestored()
+            .onEach { loadPokemonData() }
+            .launchIn(viewModelScope)
+    }
+
+    fun loadPokemonData() {
         viewModelScope.launch {
             detailError.value = false
             speciesError.value = false
-            // Detail first: ids outside the 151 (e.g. Igglybuff #174) have no row
-            // yet, and the species write needs one to land in.
             val detailOk = repository.ensureDetail(pokemonId)
             detailError.value = !detailOk
             if (detailOk) {
-                speciesError.value = !repository.ensureSpecies(pokemonId)
-                // Prefetch the pre-evolution so its thumbnail shows and
-                // tapping through is instant.
+                val speciesOk = repository.ensureSpecies(pokemonId)
+                speciesError.value = !speciesOk
                 repository.getPokemon(pokemonId)?.evolvesFromId
                     ?.let { repository.ensureDetail(it) }
             }

@@ -56,7 +56,7 @@ fun DetailScreen(
         state = state,
         onBack = onBack,
         onNavigateToPokemon = onNavigateToPokemon,
-        onRetry = viewModel::load,
+        onRetry = viewModel::loadPokemonData,
     )
 }
 
