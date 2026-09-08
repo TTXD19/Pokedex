@@ -2,78 +2,80 @@
 
 ## Assumptions and deviations (ambiguity handling)
 
-The spec left gaps; the process change meant I couldn't ask, so everything below
+The spec left gaps I couldn't ask about before building, so everything below
 is assumed-and-documented:
 
-- **"Sorted by ID" vs "sorted by alphabet"** — the requirement text says both.
-  The mock resolves it: type sections alphabetical (Bug → Dragon → Electric),
-  Pokémon within a section by id (Caterpie #10 → Weedle #13). I followed the mock.
 - **Releasing a duplicate** — a capture is an *event* (own row + timestamp), and
   release removes the specific tapped capture, not every capture of that species.
 - **Flavor text** — the API embeds Game Boy control characters (`\n`, `\f`). The
   mock appears to render them raw (odd line breaks); I treat that as a mock
   artifact, not intent, and collapse them to spaces.
-- **Purple status bar / app bar (deviation from mock)** — home has no app bar, and
-  a solid purple strip over the status area looked wrong on tall-status-bar
-  devices (foldables), so home is white edge-to-edge; the detail app bar followed
-  for consistency. I read the mock's intent as "a coherent look", not "this hex".
 - **Evolves-from outside the 151** — Pikachu → Pichu (#172), Jigglypuff →
   Igglybuff (#174) etc. point outside the 151. I initially rendered them
   non-tappable; that confused even me during testing, so Pokémon outside the 151
   are now fetched on demand for detail viewing while the collection stays
   strictly 151 (queries scope to `id <= 151`).
-- **API politeness** — the spec invites asking how hard to hit PokeAPI; with
-  nobody to ask I capped detail fetches at 5 concurrent, no retry storms, and
-  cache everything forever (Gen-1 data is static; the API itself sends
-  `cache-control: max-age=86400`).
+- **Tapping a captured Pokémon** — the spec gives the pocket card two jobs
+  (tap to view details, release from the captured list) and the mock shows
+  one card. A single tap can't mean both, and a bare Pokéball that releases
+  on touch is easy to hit by accident, so tapping the card opens a
+  "view details / release" dialog and release is styled as destructive.
+  The Pokéball on pocket cards still releases directly, mirroring capture.
+- **Back on the home screen asks before exiting** — not in the spec. Added
+  because a stray back press during a long first sync would otherwise kill
+  the app mid-fetch; the sync resumes on relaunch anyway, so this is about
+  not surprising the user, not about protecting data.
 
 ## 1. Which parts did an AI tool write?
 
-Nearly all of the code was written with an AI assistant (Claude), with me
-directing the architecture, reviewing every layer, and testing on device. The
-interesting part is what the AI got wrong and how it was caught:
+Most of the code was implemented with Claude. The split: I started by
+discussing the requirements and the spec with it — what the mock implies,
+where the text contradicts itself, what to assume; it then implemented the
+modules (DAO, repository, network layer, ViewModels, screens); and I reviewed
+each one, questioned what I didn't understand, and adjusted or rejected what
+didn't hold up.
 
-- **`ensureSpecies` first draft** misused a Flow to read one-shot state
-  (`collect` with an early return that never terminates) — it would have hung
-  forever. Replaced with a one-shot DAO query. Caught in review before it ran.
-- **Pull-to-refresh first draft** bound the indicator to the global sync state.
-  On device the indicator got stuck forever: when everything is cached, sync
-  finishes in milliseconds — faster than the indicator's show/hide animation.
-  Rewrote it with a ViewModel-owned `isRefreshing` flag and a 400 ms floor.
-  Caught only by running the app.
-- **`NetworkMonitor` first draft crashed on device** — `registerNetworkCallback`
-  needs `ACCESS_NETWORK_STATE`, which the manifest didn't declare. A
-  `SecurityException` that no amount of compilation catches.
-
-The pattern: the AI's output compiles and looks plausible; the value I added was
-insisting on on-device verification and tests that could actually fail.
+What I changed most often: rejecting output that was technically fine but
+confusing (a capture/release panel on the detail screen became a dialog on
+the pocket card), asking for simpler code where the robust version was harder
+to read, and replacing its guesses with measurements (scroll performance).
+The bugs it did introduce were the kind only a device catches — a Flow
+`collect` that never returned, a refresh indicator stuck on cached data, a
+missing `ACCESS_NETWORK_STATE` permission — so on-device verification was
+where my time went.
 
 ## 2. Data model
 
 ```
 pokemon        id (PK), name, imageUrl,
-               detailFetched, speciesFetched,          ← resumable-sync flags
+               detailFetched, speciesFetched,          ← fetch-state flags (detail: sync; species: lazily on first open)
                description, evolvesFromId, evolvesFromName
-pokemon_types  (pokemonId, typeName) composite PK, FK → pokemon, index(typeName)
-captures       id (autoincrement PK), pokemonId FK → pokemon, capturedAt
+pokemon_types  (pokemonId, typeName) composite PK, slot, FK → pokemon, index(typeName)
+captures       id (autoincrement PK), pokemonId FK → pokemon, capturedAt, index(pokemonId)
 ```
 
-**The decision that took longest: captures as events, not a flag.** The obvious
-model is `captured: Boolean` (or a count) on `pokemon`. It breaks three
-requirements at once: duplicates in My Pocket, ordering by capture time, and
-releasing one specific capture. Once capture is a timestamped row, all three
-fall out for free, and "release" is `DELETE WHERE id = ?`.
+- **`pokemon`** — one row per Pokémon, keyed by the PokeAPI `id`. `name` and
+  the row itself come from the list endpoint; `imageUrl` and the types come
+  from the detail endpoint; `description` / `evolvesFrom*` from the species
+  endpoint. Two flags decide what still needs fetching: `detailFetched = 0`
+  puts the row on the sync queue, `speciesFetched = 0` makes the detail
+  screen fetch species on first open. Whether the list itself needs
+  refetching is `COUNT(*) WHERE id <= 151` being short of 151.
+- **`pokemon_types`** — one row per (Pokémon, type) pair, keyed by the
+  composite `(pokemonId, typeName)`; `slot` keeps the primary type first.
+  It has no fetch flag of its own: it is rewritten (`REPLACE`) whenever its
+  Pokémon's detail is fetched, so its freshness follows `pokemon.detailFetched`.
+- **`captures`** — one row per capture event, keyed by its own autoincrement
+  `id`, which is exactly what "release" deletes. `pokemonId` points at the
+  species, `capturedAt` orders My Pocket. Nothing here is fetched: it is the
+  user's local data. Sync never deletes `pokemon` rows (it only inserts-or-
+  ignores and updates), which matters because a delete there would cascade
+  into this table.
 
-Runner-up: **fetch-state flags live in the `pokemon` row.** That's the entire
-resume mechanism — after process death, `WHERE detailFetched = 0` *is* the work
-queue. The alternative (in-memory progress tracking) would have needed separate
-persistence and could drift from the data it describes.
-
-Late change: Pokémon outside the 151 share the `pokemon` table, and membership
-in the 151 is expressed as `id <= 151` in the collection/sync queries rather
-than a schema column. That leans on the 151 being a fixed id-prefix (true for
-this assignment's endpoint); a non-contiguous list would break it, and then
-I'd add an `inList` column with a one-line migration.
+The decision that took longest was the `captures` table itself: a
+`captured` flag or count on `pokemon` can't hold two Pikachu with different
+timestamps and can't release just one of them, so a capture became its own
+row. Everything else followed from that.
 
 ## 3. The requirement I was least confident about
 
@@ -94,49 +96,29 @@ to believe and hard to know. What I actually did:
 
 ## 4. What I decided not to build
 
-- **Sync early-abort when connectivity drops mid-run.** Known weakness: on a
-  slow-timeout network the remaining ids each still attempt and fail (worst
-  case a few minutes of futile requests, UI stays usable). Kept because the
-  trigger is narrow; fix would be a consecutive-failure circuit breaker.
 - **WorkManager / background sync.** Foreground sync + resume-on-next-launch
   covers the requirement; background scheduling adds surface without a stated
   need.
 - **Force-refetch semantics for pull-to-refresh.** Data is static Gen-1; refresh
   re-checks and fetches only what's missing.
-- **Captured-state visuals in the collection, release undo/confirm.** Cut for
-  scope; capture events make them cheap to add later.
-- **Tablet layouts, dark theme, i18n.** Responsive-by-lists only; light theme;
-  English (matches the mock).
 - **`evolution_chain` endpoint.** `evolves_from_species` alone covers the bonus;
   the full chain would double species-related requests for one extra hop.
 
 ## 5. What I like least / one more day
 
-Least favorite: **everything above the ViewModel is only manually verified.**
-The 22 unit tests stop at the ViewModel boundary; there are no Compose UI tests,
-and the DAO's SQL (ordering, the `id <= 151` scoping) is exercised only through
-fakes that *mirror* its semantics rather than Room itself. With one more day
-I'd add Robolectric + in-memory-Room tests for the DAO queries and a Compose
-test for capture → appears in My Pocket → release.
+Least favorite: **the sync has no early abort.** If connectivity drops
+mid-run, every remaining id still attempts and fails on its own timeout — the
+UI stays usable, but it is a few minutes of futile requests. A
+consecutive-failure circuit breaker is the fix and it did not make the cut.
 
-Second: the reconnect-triggers-reload logic is duplicated in both ViewModels;
-it wants to be one shared observer.
+With one more day that is what I would spend it on: stop the run after N
+consecutive failures, surface "paused, will resume when back online" instead
+of a failure count, and let the existing `connectivityRestored()` path pick
+it up — the resume mechanism already exists, it just isn't told to wait.
 
 ## 6. Time: actual vs estimated
 
-The planned scope discussion didn't happen (process was adjusted to
-submit-before-interview), so the estimate was my own: **~2–3 part-time days**.
-Actual: **~3 part-time days** across Sep 5–7, roughly on target, but the time
-did not go where I expected:
-
-- Layers I expected to dominate (API/DB/repository/ViewModel) went fast —
-  roughly a third of the time, AI assistance at its most effective.
-- The unplanned majority went to **on-device polish and the bugs only devices
-  reveal**: the stuck refresh indicator, the missing network permission,
-  edge-to-edge insets across three screen shapes (phone/foldable/landscape
-  cutouts), and the outside-the-151 evolves-from rabbit hole — which started as
-  "why can't I tap Igglybuff" and ended as a scope decision, a data-boundary
-  design, and a UX affordance fix.
-
-An unfinished part I can explain beats a finished one I can't; the list in
-section 5 is exactly that.
+Estimated: **~2–3 part-time days**. Actual: **about 4 days at 2–3 hours
+each**, Sep 5–8. The data layers went faster than expected; the extra day went
+to on-device polish, the bugs only a device reveals, and a refactoring pass
+after the first working build.
