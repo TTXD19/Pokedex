@@ -44,7 +44,7 @@ class PokemonRepositoryImplTest {
         seedInterruptedSync(fetchedUpTo = 100)
         val repository = repository()
 
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(0, api.pokemonListCalls) // list already complete, not re-fetched
         assertEquals((101..151).toList(), api.detailCalls.sorted())
@@ -57,7 +57,7 @@ class PokemonRepositoryImplTest {
         seedInterruptedSync(fetchedUpTo = 151)
         val repository = repository()
 
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(0, api.pokemonListCalls)
         assertEquals(emptyList<Int>(), api.detailCalls)
@@ -70,7 +70,7 @@ class PokemonRepositoryImplTest {
         api.failingDetailIds = failing
         val repository = repository()
 
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(
             SyncState.Failed(failedDetails = 7, pokemonListUnavailable = false),
@@ -86,11 +86,11 @@ class PokemonRepositoryImplTest {
         val failing = setOf(3, 20, 77, 90, 101, 140, 151)
         api.failingDetailIds = failing
         val repository = repository()
-        repository.sync()
+        repository.syncPokemonData()
 
         api.failingDetailIds = emptySet()
         api.detailCalls.clear()
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(failing.sorted(), api.detailCalls.sorted())
         assertEquals(SyncState.Complete, repository.syncState.value)
@@ -101,7 +101,7 @@ class PokemonRepositoryImplTest {
         api.pokemonListFails = true
         val repository = repository()
 
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(
             SyncState.Failed(failedDetails = 0, pokemonListUnavailable = true),
@@ -114,7 +114,7 @@ class PokemonRepositoryImplTest {
     fun `detail fetches never exceed the concurrency cap`() = runTest {
         val repository = repository()
 
-        repository.sync()
+        repository.syncPokemonData()
 
         assertEquals(151, api.detailCalls.size)
         assertEquals(

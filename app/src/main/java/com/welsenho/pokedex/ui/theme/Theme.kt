@@ -5,7 +5,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Deep purple app bar per the reference mock; light theme only (documented cut).
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF3B12A6),
     onPrimary = Color.White,

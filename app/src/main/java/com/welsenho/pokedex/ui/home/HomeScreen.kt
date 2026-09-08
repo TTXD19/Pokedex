@@ -70,7 +70,7 @@ fun HomeScreen(
                 .weight(1f),
         ) {
             when {
-                state.showFullScreenError -> FullScreenError(onRetry = viewModel::sync)
+                state.showFullScreenError -> FullScreenError(onRetry = viewModel::syncPokemonData)
 
                 state.typeGroups.isEmpty() && state.captured.isEmpty() &&
                         state.syncState !is SyncState.Failed -> Box(
@@ -89,7 +89,7 @@ fun HomeScreen(
                         onPokemonClick = onPokemonClick,
                         onCapture = viewModel::capture,
                         onRelease = viewModel::release,
-                        onRetry = viewModel::sync,
+                        onRetry = viewModel::syncPokemonData,
                     )
                 }
             }

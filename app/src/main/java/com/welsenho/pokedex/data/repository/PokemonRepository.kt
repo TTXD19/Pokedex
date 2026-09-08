@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Single source of truth for Pokémon data. Reads always come from the local DB;
- * [sync] and [ensureSpecies] pull from the network into it.
+ * [syncPokemonData] and [ensureSpecies] pull from the network into it.
  */
 interface PokemonRepository {
 
@@ -42,7 +42,7 @@ interface PokemonRepository {
      * Resumable sync: fetches the Pokémon list if missing, then only the details not
      * yet in the DB, committing each success immediately.
      */
-    suspend fun sync()
+    suspend fun syncPokemonData()
 
     /**
      * Fetches species data (description / evolves-from) if not cached yet.

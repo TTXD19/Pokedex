@@ -34,7 +34,6 @@ fun PokedexApp() {
             DetailScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                // Evolves-from pushes another detail entry so back walks up the chain.
                 onNavigateToPokemon = { id -> navController.navigate("detail/$id") },
             )
         }

@@ -21,8 +21,11 @@ class DetailViewModel(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val pokemonId: Int = checkNotNull(savedStateHandle[ARG_POKEMON_ID])
+    companion object {
+        const val ARG_POKEMON_ID = "pokemonId"
+    }
 
+    private val pokemonId: Int = checkNotNull(savedStateHandle[ARG_POKEMON_ID])
     private val detailError = MutableStateFlow(false)
     private val speciesError = MutableStateFlow(false)
 
@@ -77,9 +80,5 @@ class DetailViewModel(
                     ?.let { repository.ensureDetail(it) }
             }
         }
-    }
-
-    companion object {
-        const val ARG_POKEMON_ID = "pokemonId"
     }
 }

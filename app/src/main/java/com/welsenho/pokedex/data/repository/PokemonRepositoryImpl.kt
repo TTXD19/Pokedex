@@ -67,7 +67,7 @@ class PokemonRepositoryImpl(
      * run resumes from wherever it died. Already-fetched rows are never
      * re-requested.
      */
-    override suspend fun sync() {
+    override suspend fun syncPokemonData() {
         syncMutex.withLock {
             _syncState.value = SyncState.Running
 
@@ -77,7 +77,7 @@ class PokemonRepositoryImpl(
                     pokemonDao.insertPokemonList(
                         pokemonList.results.map { PokemonEntity(id = it.id, name = it.name) }
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     if (pokemonDao.getPokemonListSize(POKEMON_LIMIT) == 0) {
                         _syncState.value = SyncState.Failed(0, pokemonListUnavailable = true)
                         return
@@ -94,7 +94,7 @@ class PokemonRepositoryImpl(
                             try {
                                 fetchAndStoreDetail(id)
                                 null
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 id
                             }
                         }
@@ -126,7 +126,7 @@ class PokemonRepositoryImpl(
             pokemonDao.insertPokemonList(listOf(PokemonEntity(id = id, name = "")))
             fetchAndStoreDetail(id)
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -142,7 +142,7 @@ class PokemonRepositoryImpl(
                 evolvesFromName = species.evolvesFromSpecies?.name,
             )
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

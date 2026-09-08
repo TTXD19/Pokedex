@@ -20,6 +20,10 @@ class HomeViewModel(
     private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
+    companion object {
+        private const val MIN_REFRESH_VISIBLE_MS = 400L
+    }
+
     private val isRefreshing = MutableStateFlow(false)
 
     val uiState: StateFlow<HomeUiState> =
@@ -51,29 +55,24 @@ class HomeViewModel(
         )
 
     init {
-        sync()
+        syncPokemonData()
         syncWhenBackOnline()
     }
 
     private fun syncWhenBackOnline() {
         networkMonitor.connectivityRestored()
-            .onEach { repository.sync() }
+            .onEach { repository.syncPokemonData() }
             .launchIn(viewModelScope)
     }
 
-    fun sync() {
-        viewModelScope.launch { repository.sync() }
+    fun syncPokemonData() {
+        viewModelScope.launch { repository.syncPokemonData() }
     }
 
-    /**
-     * Pull-to-refresh. When everything is already fetched, sync returns in
-     * milliseconds — too fast for the indicator's show/hide animation, which
-     * leaves it stuck. The floor keeps the true->false transition observable.
-     */
     fun refresh() {
         viewModelScope.launch {
             isRefreshing.value = true
-            repository.sync()
+            repository.syncPokemonData()
             delay(MIN_REFRESH_VISIBLE_MS.milliseconds)
             isRefreshing.value = false
         }
@@ -85,9 +84,5 @@ class HomeViewModel(
 
     fun release(captureId: Long) {
         viewModelScope.launch { repository.release(captureId) }
-    }
-
-    companion object {
-        private const val MIN_REFRESH_VISIBLE_MS = 400L
     }
 }

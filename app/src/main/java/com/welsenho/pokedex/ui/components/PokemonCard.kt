@@ -22,11 +22,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.welsenho.pokedex.ui.theme.PokedexTheme
 
-/**
- * One cell in a horizontal Pokémon row: artwork with a Pokéball action button
- * overlaid top-end (capture in the collection, release in My Pocket) and the
- * name underneath, matching the reference mock.
- */
 @Composable
 fun PokemonCard(
     name: String,

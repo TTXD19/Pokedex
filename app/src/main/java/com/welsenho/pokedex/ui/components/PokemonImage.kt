@@ -10,10 +10,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalInspectionMode
 import coil.compose.AsyncImage
 
-/**
- * AsyncImage that renders a plain placeholder circle in @Preview (Coil can't
- * load network images in the IDE's inspection mode).
- */
 @Composable
 fun PokemonImage(
     imageUrl: String?,

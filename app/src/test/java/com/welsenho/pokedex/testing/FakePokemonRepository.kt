@@ -67,7 +67,7 @@ class FakePokemonRepository : PokemonRepository {
         captures.value = captures.value.filterNot { it.id == captureId }
     }
 
-    override suspend fun sync() {
+    override suspend fun syncPokemonData() {
         syncCalls++
     }
 
