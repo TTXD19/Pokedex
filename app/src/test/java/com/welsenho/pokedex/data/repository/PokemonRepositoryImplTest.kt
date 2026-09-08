@@ -48,7 +48,7 @@ class PokemonRepositoryImplTest {
 
         assertEquals(0, api.pokemonListCalls) // list already complete, not re-fetched
         assertEquals((101..151).toList(), api.detailCalls.sorted())
-        assertEquals(emptyList<Int>(), dao.missingDetailIds(151))
+        assertEquals(emptyList<Int>(), dao.getMissingDetailIdsList(151))
         assertEquals(SyncState.Complete, repository.syncState.value)
     }
 
@@ -77,7 +77,7 @@ class PokemonRepositoryImplTest {
             repository.syncState.value,
         )
         // Only the failed ids are still missing; successes all landed.
-        assertEquals(failing.sorted(), dao.missingDetailIds(151))
+        assertEquals(failing.sorted(), dao.getMissingDetailIdsList(151))
         assertTrue(dao.getPokemon(1)!!.detailFetched)
     }
 

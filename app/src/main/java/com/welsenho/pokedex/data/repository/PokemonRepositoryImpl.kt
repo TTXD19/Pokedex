@@ -68,27 +68,24 @@ class PokemonRepositoryImpl(
      * re-requested.
      */
     override suspend fun sync() {
-        // A second caller (e.g. retry spam) just waits for the run in flight.
         syncMutex.withLock {
             _syncState.value = SyncState.Running
 
-            if (pokemonDao.countPokemon(POKEMON_LIMIT) < POKEMON_LIMIT) {
+            if (pokemonDao.getPokemonListSize(POKEMON_LIMIT) < POKEMON_LIMIT) {
                 try {
                     val pokemonList = api.getPokemonList(limit = POKEMON_LIMIT)
                     pokemonDao.insertPokemonList(
                         pokemonList.results.map { PokemonEntity(id = it.id, name = it.name) }
                     )
                 } catch (e: Exception) {
-                    if (pokemonDao.countPokemon(POKEMON_LIMIT) == 0) {
+                    if (pokemonDao.getPokemonListSize(POKEMON_LIMIT) == 0) {
                         _syncState.value = SyncState.Failed(0, pokemonListUnavailable = true)
                         return
                     }
-                    // Partial roster can't happen (single request) — but a stale
-                    // shorter roster from a previous limit is still usable.
                 }
             }
 
-            val missing = pokemonDao.missingDetailIds(POKEMON_LIMIT)
+            val missing = pokemonDao.getMissingDetailIdsList(POKEMON_LIMIT)
             val failed = coroutineScope {
                 val semaphore = Semaphore(MAX_CONCURRENT_DETAIL_FETCHES)
                 missing.map { id ->

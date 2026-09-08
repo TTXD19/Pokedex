@@ -27,10 +27,10 @@ interface PokemonDao {
      * roster is exactly ids 1..151.
      */
     @Query("SELECT COUNT(*) FROM pokemon WHERE id <= :limit")
-    suspend fun countPokemon(limit: Int): Int
+    suspend fun getPokemonListSize(limit: Int): Int
 
     @Query("SELECT id FROM pokemon WHERE detailFetched = 0 AND id <= :limit ORDER BY id")
-    suspend fun missingDetailIds(limit: Int): List<Int>
+    suspend fun getMissingDetailIdsList(limit: Int): List<Int>
 
     @Query(
         "UPDATE pokemon SET name = :name, imageUrl = :imageUrl, detailFetched = 1 WHERE id = :id"
